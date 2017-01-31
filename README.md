@@ -1,7 +1,11 @@
 # HighPerf
 Private Repo for collaboration and work in EC527 labs and project
 
-## Current Assignment -- Lab 2
+## Current Assignment -- Lab 1
+
+Will make checklist this afternoon -- Burke
+
+## Next Assignment -- Lab 2
 
 Check list for where a given portion may be
 
