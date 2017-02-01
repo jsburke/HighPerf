@@ -1,4 +1,5 @@
 function graph_2d(file)
+% Should alter to rename axes
 data = csvread(file);
 figure;
 hold on;
