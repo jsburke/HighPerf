@@ -12,7 +12,8 @@ Private Repo for collaboration and work in EC527 labs and project
 |       |Note||This section is especially messy|
 |Part 2 |||Optimize MMM using loop interchange|
 |       ||||
-
+|Part 3 |||MMM with blocking|
+|Part 4 |||Matrix transpose with loop interchange and blocking
 This whole assigment seems far more messy than the first unfortunately
 
 
