@@ -2,8 +2,19 @@
 Private Repo for collaboration and work in EC527 labs and project
 
 ## Current Assignment -- Lab 1
+|Taks|Subtask|status|notes|
+|----|-------|------|-----|
+|B&O 5.3||||
+|B&O 6.5||||
+|B&O 6.6||||
+|B&O Blocking||||
+|Part 1 |||run code, compute data, interpret on spreadsheet|
+|       |Note||This section is especially messy|
+|Part 2 |||Optimize MMM using loop interchange|
+|       ||||
 
-Will make checklist this afternoon -- Burke
+This whole assigment seems far more messy than the first unfortunately
+
 
 ## Next Assignment -- Lab 2
 
