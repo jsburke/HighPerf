@@ -17,6 +17,14 @@ Private Repo for collaboration and work in EC527 labs and project
 |Part 4 |||Matrix transpose with loop interchange and blocking
 This whole assigment seems far more messy than the first unfortunately
 
+proposed for vec_free(), will test
+
+void vec_free(vec_ptr vec) //return 1 for good, 0 for fail
+{
+  free(vec->data);
+  free(vec);
+}
+
 
 ## Next Assignment -- Lab 2
 
