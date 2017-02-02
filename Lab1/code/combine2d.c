@@ -14,11 +14,11 @@
 // the following have been changed to int so that we can loop on them
 // to generate multiple files per run without the need to recompile
 int BASE = 0;
-int ITERS = 5;
+int ITERS = 4;
 int DELTA = 2;
-#define ITERSMAX 25
-#define DELTAMAX 8
-#define ITERSJUMP 5
+#define ITERSMAX 256
+#define DELTAMAX 512
+#define ITERSJUMP 4
 #define DELTAJUMP 2
 
 #define OPTIONS 2
@@ -63,47 +63,48 @@ main(int argc, char *argv[])
     for(i = ITERS; i <= ITERSMAX; i *= ITERSJUMP)
     {
       MAXSIZE = BASE+(i+1)*d;
+      sprintf(filename, "%sI%d_D%d.csv", FILE_PREFIX, i, d);
+      printf("Current file: %s\n", filename);
 
-        vec_ptr v0 = new_vec(MAXSIZE);
-        data_holder = (data_t *) malloc(sizeof(data_t));
-        init_vector(v0, MAXSIZE);
+      vec_ptr v0 = new_vec(MAXSIZE);
+      data_holder = (data_t *) malloc(sizeof(data_t));
+      init_vector(v0, MAXSIZE);
 
-        OPTION = 0;  // forward
-          for (k = 0; k < ITERS; k++) 
-          {
-           set_vec_length(v0,BASE+(k+1)*d);
-          clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
-          combine2D(v0, data_holder);
-          clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
-          time_stamp[OPTION][k] = diff(time1,time2);
-        }
+      OPTION = 0;  // forward
+      for (k = 0; k < ITERS; k++) 
+      {
+        set_vec_length(v0,BASE+(k+1)*d);
+        clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
+        combine2D(v0, data_holder);
+        clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
+        time_stamp[OPTION][k] = diff(time1,time2);
+      }
 
-        OPTION++; // reverse
-        for (k = 0; k < ITERS; k++) 
+      OPTION++; // reverse
+      for (k = 0; k < ITERS; k++) 
+      {
+        set_vec_length(v0,BASE+(k+1)*d);
+        clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
+        combine2D_rev(v0, data_holder);
+        clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
+        time_stamp[OPTION][k] = diff(time1,time2);
+      }
+
+      //print to file
+
+      fp = fopen(filename, "w");
+      for (k = 0; k < ITERS; k++) 
+      {
+        fprintf(fp,"\n%d, ", BASE+(k+1)*d);
+        for (j = 0; j < OPTIONS; j++) 
         {
-          set_vec_length(v0,BASE+(k+1)*d);
-          clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
-          combine2D_rev(v0, data_holder);
-          clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
-          time_stamp[OPTION][k] = diff(time1,time2);
-        }
-
-        //print to file
-
-        sprintf(filename, "%sI%d_D%d.csv", FILE_PREFIX, i, d);
-        fp = fopen(filename, "w");
-        for (k = 0; k < ITERS; k++) 
-        {
-          fprintf(fp,"\n%d, ", BASE+(k+1)*d);
-          for (j = 0; j < OPTIONS; j++) 
-          {
-              if (j != 0) fprintf(fp,", ");
-              fprintf(fp,"%ld", (long int)((double)(CPG)*(double) (GIG * time_stamp[j][k].tv_sec + time_stamp[j][k].tv_nsec)));
-            } 
-        }
-        fclose(fp);
+          if (j != 0) fprintf(fp,", ");
+          fprintf(fp,"%ld", (long int)((double)(CPG)*(double) (GIG * time_stamp[j][k].tv_sec + time_stamp[j][k].tv_nsec)));
+        } 
+      }
+      fclose(fp);
     }
-}
+  }
 
   //printf("\n");
   
