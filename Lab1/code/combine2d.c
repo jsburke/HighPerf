@@ -8,26 +8,19 @@
 #include <math.h>
 
 #define GIG 1000000000
-#define CPG 2.9           // changed to 2.9 for lab computers
+#define CPG 2.9           // Cycles per GHz -- Adjust to your computer
 
-
-// the following have been changed to int so that we can loop on them
-// to generate multiple files per run without the need to recompile
-int BASE = 0;
-int ITERS = 4;
-int DELTA = 2;
-#define ITERSMAX 256
-#define DELTAMAX 512
-#define ITERSJUMP 4
-#define DELTAJUMP 2
+#define BASE  0
+//#define ITERS 30
+//#define DELTA 200
 
 #define OPTIONS 2
 #define IDENT 1
 #define OP *
 
-#define FILE_PREFIX ((const unsigned char*) "intMul_")
+#define FILE_PREFIX ((const unsigned char*) "doubleMul_")
 
-typedef int data_t;
+typedef double data_t;
 
 /* Create abstract data type for vector */
 typedef struct {
@@ -38,6 +31,17 @@ typedef struct {
 /*****************************************************************************/
 main(int argc, char *argv[])
 {
+  int DELTA, ITERS;
+
+    if(argc != 3)
+  {
+    printf("num args wrong\n");
+    return 0;
+  }
+  
+  DELTA = strtol(argv[1],NULL,10);
+  ITERS = strtol(argv[2],NULL,10);
+
   int OPTION;
   struct timespec diff(struct timespec start, struct timespec end);
   struct timespec time1, time2;
@@ -51,58 +55,46 @@ main(int argc, char *argv[])
   void combine2D(vec_ptr v, data_t *dest);
   void combine2D_rev(vec_ptr v, data_t *dest);
 
-  long int d, i, j, k;
+  long int i, j, k;
   long int time_sec, time_ns;
-  long int MAXSIZE;
-
+  long int MAXSIZE = BASE+(ITERS+1)*DELTA;
+  
   char filename [255] = {0};
   FILE *fp;
 
-  for(d = DELTA; d <= DELTAMAX; d *= DELTAJUMP)
-  {
-    for(i = ITERS; i <= ITERSMAX; i *= ITERSJUMP)
-    {
-      MAXSIZE = BASE+(i+1)*d;
-      sprintf(filename, "%sI%d_D%d.csv", FILE_PREFIX, i, d);
-      printf("Current file: %s\n", filename);
+  sprintf(filename, "%sI%d_D%d.csv", FILE_PREFIX, ITERS, DELTA);
+  printf("Current file: %s\n", filename);
 
-      vec_ptr v0 = new_vec(MAXSIZE);
-      data_holder = (data_t *) malloc(sizeof(data_t));
-      init_vector(v0, MAXSIZE);
+  // declare and initialize the vector structure
+  vec_ptr v0 = new_vec(MAXSIZE);
+  data_holder = (data_t *) malloc(sizeof(data_t));
+  init_vector(v0, MAXSIZE);
 
-      OPTION = 0;  // forward
-      for (k = 0; k < ITERS; k++) 
-      {
-        set_vec_length(v0,BASE+(k+1)*d);
-        clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
-        combine2D(v0, data_holder);
-        clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
-        time_stamp[OPTION][k] = diff(time1,time2);
-      }
+  OPTION = 0;
+  for (i = 0; i < ITERS; i++) {
+    set_vec_length(v0,BASE+(i+1)*DELTA);
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
+    combine2D(v0, data_holder);
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
+    time_stamp[OPTION][i] = diff(time1,time2);
+  }
 
-      OPTION++; // reverse
-      for (k = 0; k < ITERS; k++) 
-      {
-        set_vec_length(v0,BASE+(k+1)*d);
-        clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
-        combine2D_rev(v0, data_holder);
-        clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
-        time_stamp[OPTION][k] = diff(time1,time2);
-      }
+  OPTION++;
+  for (i = 0; i < ITERS; i++) {
+    set_vec_length(v0,BASE+(i+1)*DELTA);
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
+    combine2D_rev(v0, data_holder);
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
+    time_stamp[OPTION][i] = diff(time1,time2);
+  }
 
-      //print to file
-
-      fp = fopen(filename, "w");
-      for (k = 0; k < ITERS; k++) 
-      {
-        fprintf(fp,"\n%d, ", BASE+(k+1)*d);
-        for (j = 0; j < OPTIONS; j++) 
-        {
-          if (j != 0) fprintf(fp,", ");
-          fprintf(fp,"%ld", (long int)((double)(CPG)*(double) (GIG * time_stamp[j][k].tv_sec + time_stamp[j][k].tv_nsec)));
-        } 
-      }
-      fclose(fp);
+  fp = fopen(filename,"w");
+  for (i = 0; i < ITERS; i++) {
+    fprintf(fp,"\n%d, ", BASE+(i+1)*DELTA);
+    for (j = 0; j < OPTIONS; j++) {
+      if (j != 0) fprintf(fp,", ");
+      fprintf(fp,"%ld", (long int)((double)(CPG)*(double)
+     (GIG * time_stamp[j][i].tv_sec + time_stamp[j][i].tv_nsec)));
     }
   }
 
@@ -125,11 +117,11 @@ vec_ptr new_vec(long int len)
   if (len > 0) {
     data_t *data = (data_t *) calloc(len*len, sizeof(data_t));
     if (!data) {
-	  free((void *) result);
-	  printf("\n COULDN'T ALLOCATE STORAGE \n", result->len);
-	  return NULL;  /* Couldn't allocate storage */
-	}
-	result->data = data;
+    free((void *) result);
+    printf("\n COULDN'T ALLOCATE STORAGE \n", result->len);
+    return NULL;  /* Couldn't allocate storage */
+  }
+  result->data = data;
   }
   else result->data = NULL;
 
