@@ -1,5 +1,5 @@
 #!/bin/bash
-gcc -O1 -lrt combine2d.c -o combine2d
+gcc -O1 -lrt combine2d.c -o combine2d.exe
 #       DELTA ITERS
 ./combine2d 2 10
 ./combine2d 2 20
@@ -25,4 +25,4 @@ gcc -O1 -lrt combine2d.c -o combine2d
 ./combine2d 64 80
 ./combine2d 64 160
 ./combine2d 64 320
-mv *.csv ./p1_data/
+mv *.csv ./part1_data/
