@@ -1,5 +1,5 @@
 #!/bin/bash
-gcc -O1 -lrt combine2d.c -o combine2d.exe
+gcc -O1 -lrt combine2d.c -o combine2d
 #       DELTA ITERS
 ./combine2d 2 10
 ./combine2d 2 20
