@@ -28,6 +28,8 @@ typedef struct {
   data_t *data;
 } matrix_rec, *matrix_ptr;
 
+void mmm_bijk(matrix_ptr a, matrix_ptr b, matrix_ptr c, long int bsize);
+
 /*****************************************************************************/
 main(int argc, char *argv[])
 {
@@ -40,9 +42,8 @@ main(int argc, char *argv[])
   long int get_matrix_length(matrix_ptr m);
   int init_matrix(matrix_ptr m, long int len);
   int zero_matrix(matrix_ptr m, long int len);
-  void mmm_ijk(matrix_ptr a, matrix_ptr b, matrix_ptr c);
-  void mmm_kij(matrix_ptr a, matrix_ptr b, matrix_ptr c);
-  void mmm_jki(matrix_ptr a, matrix_ptr b, matrix_ptr c);
+  void mmm_bijk(matrix_ptr a, matrix_ptr b, matrix_ptr c, long int bsize);
+
 
   long int i, j, k;
   long int time_sec, time_ns;
@@ -62,6 +63,7 @@ main(int argc, char *argv[])
   for (bsize = INIT_BSIZE, bsz_index = 0; 
        bsz_index < BSZS;
        bsize *= BSIZE_MUL, bsz_index++) {
+    printf("\nbsize = %ld", bsize);
     for (i = 0; i < ITERS; i++) {
       set_matrix_length(a0,BASE+(i+1)*DELTA);
       set_matrix_length(b0,BASE+(i+1)*DELTA);
@@ -191,7 +193,7 @@ void mmm_bijk(matrix_ptr a, matrix_ptr b, matrix_ptr c, long int bsize)
   data_t *b0 = get_matrix_start(b);
   data_t *c0 = get_matrix_start(c);
   data_t sum;
-  long int en = bsize * (n-bsize);
+  long int en = bsize * (length-bsize);
 
   for(kk = 0; kk < en; kk += bsize) {
     for(jj = 0; jj < en; jj += bsize) {
