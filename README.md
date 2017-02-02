@@ -9,7 +9,8 @@ Private Repo for collaboration and work in EC527 labs and project
 |B&O 6.6||||
 |B&O Blocking||||
 |Part 1 |||run code, compute data, interpret on spreadsheet|
-|       |Note||This section is especially messy|
+|       |Note||current loops in main need to free vecs|
+|       |    ||need to make a vec_free function|
 |Part 2 |||Optimize MMM using loop interchange|
 |       ||||
 |Part 3 |||MMM with blocking|
