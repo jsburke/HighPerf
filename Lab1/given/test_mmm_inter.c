@@ -1,5 +1,5 @@
 /*****************************************************************************/
-// gcc -O1 -o test_combine2d test_combine2d.c -lrt
+// gcc -O1 -o test_mmm_inter test_mmm_inter.c -lrt
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,20 +11,19 @@
 #define CPG 2.0           // Cycles per GHz -- Adjust to your computer
 
 #define BASE  0
-#define ITERS 30
-#define DELTA 200
+#define ITERS 20
+#define DELTA 113
 
-#define OPTIONS 2
+#define OPTIONS 3
 #define IDENT 0
-#define OP *
 
 typedef double data_t;
 
-/* Create abstract data type for vector */
+/* Create abstract data type for matrix */
 typedef struct {
   long int len;
   data_t *data;
-} vec_rec, *vec_ptr;
+} matrix_rec, *matrix_ptr;
 
 /*****************************************************************************/
 main(int argc, char *argv[])
@@ -34,43 +33,68 @@ main(int argc, char *argv[])
   struct timespec time1, time2;
   struct timespec time_stamp[OPTIONS][ITERS+1];
   int clock_gettime(clockid_t clk_id, struct timespec *tp);
-  vec_ptr new_vec(long int len);
-  int set_vec_length(vec_ptr v, long int index);
-  long int get_vec_length(vec_ptr v);
-  int init_vector(vec_ptr v, long int len);
-  data_t *data_holder;
-  void combine2D(vec_ptr v, data_t *dest);
-  void combine2D_rev(vec_ptr v, data_t *dest);
+  matrix_ptr new_matrix(long int len);
+  int set_matrix_length(matrix_ptr m, long int index);
+  long int get_matrix_length(matrix_ptr m);
+  int init_matrix(matrix_ptr m, long int len);
+  int zero_matrix(matrix_ptr m, long int len);
+  void mmm_ijk(matrix_ptr a, matrix_ptr b, matrix_ptr c);
+  void mmm_kij(matrix_ptr a, matrix_ptr b, matrix_ptr c);
+  void mmm_jki(matrix_ptr a, matrix_ptr b, matrix_ptr c);
 
   long int i, j, k;
   long int time_sec, time_ns;
   long int MAXSIZE = BASE+(ITERS+1)*DELTA;
 
-  printf("\n Hello World -- 2D Combine \n");
+  printf("\n Hello World -- MMM \n");
 
-  // declare and initialize the vector structure
-  vec_ptr v0 = new_vec(MAXSIZE);
-  data_holder = (data_t *) malloc(sizeof(data_t));
-  init_vector(v0, MAXSIZE);
+  // declare and initialize the matrix structure
+  matrix_ptr a0 = new_matrix(MAXSIZE);
+  init_matrix(a0, MAXSIZE);
+  matrix_ptr b0 = new_matrix(MAXSIZE);
+  init_matrix(b0, MAXSIZE);
+  matrix_ptr c0 = new_matrix(MAXSIZE);
+  zero_matrix(c0, MAXSIZE);
 
   OPTION = 0;
   for (i = 0; i < ITERS; i++) {
-    set_vec_length(v0,BASE+(i+1)*DELTA);
+    set_matrix_length(a0,BASE+(i+1)*DELTA);
+    set_matrix_length(b0,BASE+(i+1)*DELTA);
+    set_matrix_length(c0,BASE+(i+1)*DELTA);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
-    combine2D(v0, data_holder);
+    mmm_ijk(a0,b0,c0);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
     time_stamp[OPTION][i] = diff(time1,time2);
+    printf("\niter = %d", i);
   }
 
   OPTION++;
   for (i = 0; i < ITERS; i++) {
-    set_vec_length(v0,BASE+(i+1)*DELTA);
+    set_matrix_length(a0,BASE+(i+1)*DELTA);
+    set_matrix_length(b0,BASE+(i+1)*DELTA);
+    set_matrix_length(c0,BASE+(i+1)*DELTA);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
-    combine2D_rev(v0, data_holder);
+    mmm_kij(a0,b0,c0);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
     time_stamp[OPTION][i] = diff(time1,time2);
+    printf("\niter = %d", i);
   }
 
+  OPTION++;
+  if (OPTIONS > 2) {
+    for (i = 0; i < ITERS; i++) {
+      set_matrix_length(a0,BASE+(i+1)*DELTA);
+      set_matrix_length(b0,BASE+(i+1)*DELTA);
+      set_matrix_length(c0,BASE+(i+1)*DELTA);
+      clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
+      mmm_jki(a0,b0,c0);
+      clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
+      time_stamp[OPTION][i] = diff(time1,time2);
+      printf("\niter = %d", i);
+    }
+  }
+
+  printf("\nlength, ijk, kij, jki");
   for (i = 0; i < ITERS; i++) {
     printf("\n%d, ", BASE+(i+1)*DELTA);
     for (j = 0; j < OPTIONS; j++) {
@@ -83,15 +107,16 @@ main(int argc, char *argv[])
   printf("\n");
   
 }/* end main */
-/*********************************/
 
-/* Create 2D vector of specified length per dimension */
-vec_ptr new_vec(long int len)
+/**********************************************/
+
+/* Create matrix of specified length */
+matrix_ptr new_matrix(long int len)
 {
   long int i;
 
   /* Allocate and declare header structure */
-  vec_ptr result = (vec_ptr) malloc(sizeof(vec_rec));
+  matrix_ptr result = (matrix_ptr) malloc(sizeof(matrix_rec));
   if (!result) return NULL;  /* Couldn't allocate storage */
   result->len = len;
 
@@ -110,36 +135,53 @@ vec_ptr new_vec(long int len)
   return result;
 }
 
-/* Set length of vector */
-int set_vec_length(vec_ptr v, long int index)
+/* Set length of matrix */
+int set_matrix_length(matrix_ptr m, long int index)
 {
-  v->len = index;
+  m->len = index;
   return 1;
 }
 
-/* Return length of vector */
-long int get_vec_length(vec_ptr v)
+/* Return length of matrix */
+long int get_matrix_length(matrix_ptr m)
 {
-  return v->len;
+  return m->len;
 }
 
-/* initialize 2D vector */
-int init_vector(vec_ptr v, long int len)
+/* initialize matrix */
+int init_matrix(matrix_ptr m, long int len)
 {
   long int i;
 
   if (len > 0) {
-    v->len = len;
-    for (i = 0; i < len*len; i++) v->data[i] = (data_t)(i);
+    m->len = len;
+    for (i = 0; i < len*len; i++)
+      m->data[i] = (data_t)(i);
     return 1;
   }
   else return 0;
 }
 
-data_t *get_vec_start(vec_ptr v)
+/* initialize matrix */
+int zero_matrix(matrix_ptr m, long int len)
 {
-  return v->data;
+  long int i,j;
+
+  if (len > 0) {
+    m->len = len;
+    for (i = 0; i < len*len; i++)
+      m->data[i] = (data_t)(IDENT);
+    return 1;
+  }
+  else return 0;
 }
+
+data_t *get_matrix_start(matrix_ptr m)
+{
+  return m->data;
+}
+
+/*************************************************/
 
 struct timespec diff(struct timespec start, struct timespec end)
 {
@@ -154,36 +196,65 @@ struct timespec diff(struct timespec start, struct timespec end)
   return temp;
 }
 
-/************************************/
+/*************************************************/
 
-/* Combine2D:  Accumulate result in local variable */
-void combine2D(vec_ptr v, data_t *dest)
+/* mmm */
+void mmm_ijk(matrix_ptr a, matrix_ptr b, matrix_ptr c)
 {
-  long int i, j;
-  long int get_vec_length(vec_ptr v);
-  data_t *get_vec_start(vec_ptr v);
-  long int length = get_vec_length(v);
-  data_t *data = get_vec_start(v);
-  data_t acc = IDENT;
+  long int i, j, k;
+  long int get_matrix_length(matrix_ptr m);
+  data_t *get_matrix_start(matrix_ptr m);
+  long int length = get_matrix_length(a);
+  data_t *a0 = get_matrix_start(a);
+  data_t *b0 = get_matrix_start(b);
+  data_t *c0 = get_matrix_start(c);
+  data_t sum;
 
   for (i = 0; i < length; i++)
-    for (j = 0; j < length; j++)
-      acc = acc OP data[i*length+j];
-  *dest = acc;
+    for (j = 0; j < length; j++) {
+      sum = IDENT;
+      for (k = 0; k < length; k++)
+	sum += a0[i*length+k] * b0[k*length+j];
+      c0[i*length+j] += sum;
+    }
 }
 
-/* Combine2D_rev:  Accumulate result in local variable */
-void combine2D_rev(vec_ptr v, data_t *dest)
+/* mmm */
+void mmm_kij(matrix_ptr a, matrix_ptr b, matrix_ptr c)
 {
-  long int i, j;
-  long int get_vec_length(vec_ptr v);
-  data_t *get_vec_start(vec_ptr v);
-  long int length = get_vec_length(v);
-  data_t *data = get_vec_start(v);
-  data_t acc = IDENT;
+  long int i, j, k;
+  long int get_matrix_length(matrix_ptr m);
+  data_t *get_matrix_start(matrix_ptr m);
+  long int length = get_matrix_length(a);
+  data_t *a0 = get_matrix_start(a);
+  data_t *b0 = get_matrix_start(b);
+  data_t *c0 = get_matrix_start(c);
+  data_t r;
 
-  for (i = 0; i < length; i++)
-    for (j = 0; j < length; j++)
-      acc = acc OP data[j*length+i];
-  *dest = acc;
+  for (k = 0; k < length; k++)
+    for (i = 0; i < length; i++) {
+      r = a0[i*length+k];
+      for (j = 0; j < length; j++)
+	c0[i*length+j] += r*b0[k*length+j];
+    }
+}
+
+/* mmm */
+void mmm_jki(matrix_ptr a, matrix_ptr b, matrix_ptr c)
+{
+  long int i, j, k;
+  long int get_matrix_length(matrix_ptr m);
+  data_t *get_matrix_start(matrix_ptr m);
+  long int length = get_matrix_length(a);
+  data_t *a0 = get_matrix_start(a);
+  data_t *b0 = get_matrix_start(b);
+  data_t *c0 = get_matrix_start(c);
+  data_t r;
+
+  for (j = 0; j < length; j++)
+    for (k = 0; k < length; k++) {
+      r = b0[k*length+j];
+      for (i = 0; i < length; i++)
+	c0[i*length+j] += a0[i*length+k]*r;
+    }
 }
