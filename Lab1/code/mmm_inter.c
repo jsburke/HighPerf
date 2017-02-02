@@ -8,11 +8,11 @@
 #include <math.h>
 
 #define GIG 1000000000
-#define CPG 2.0           // Cycles per GHz -- Adjust to your computer
+#define CPG 2.9           // Cycles per GHz -- Adjust to your computer
 
-#define BASE  0
-#define ITERS 20
-#define DELTA 113
+//#define BASE  0
+//#define ITERS 5
+//#define DELTA 113
 
 #define OPTIONS 3
 #define IDENT 0
@@ -28,6 +28,19 @@ typedef struct {
 /*****************************************************************************/
 main(int argc, char *argv[])
 {
+  
+  int BASE, DELTA, ITERS;
+
+  if(argc != 4)
+  {
+    printf("num args wrong\n");
+    return 0;
+  }
+
+  BASE  = strtol(argv[1],NULL,10);
+  DELTA = strtol(argv[2],NULL,10);
+  ITERS = strtol(argv[3],NULL,10);
+
   int OPTION;
   struct timespec diff(struct timespec start, struct timespec end);
   struct timespec time1, time2;
@@ -46,7 +59,7 @@ main(int argc, char *argv[])
   long int time_sec, time_ns;
   long int MAXSIZE = BASE+(ITERS+1)*DELTA;
 
-  printf("\n Hello World -- MMM \n");
+  //printf("\n Hello World -- MMM \n");
 
   // declare and initialize the matrix structure
   matrix_ptr a0 = new_matrix(MAXSIZE);
@@ -65,7 +78,7 @@ main(int argc, char *argv[])
     mmm_ijk(a0,b0,c0);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
     time_stamp[OPTION][i] = diff(time1,time2);
-    printf("\niter = %d", i);
+    //printf("\niter = %d", i);
   }
 
   OPTION++;
@@ -77,7 +90,7 @@ main(int argc, char *argv[])
     mmm_kij(a0,b0,c0);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
     time_stamp[OPTION][i] = diff(time1,time2);
-    printf("\niter = %d", i);
+    //printf("\niter = %d", i);
   }
 
   OPTION++;
@@ -90,21 +103,21 @@ main(int argc, char *argv[])
       mmm_jki(a0,b0,c0);
       clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
       time_stamp[OPTION][i] = diff(time1,time2);
-      printf("\niter = %d", i);
+      //printf("\niter = %d", i);
     }
   }
 
-  printf("\nlength, ijk, kij, jki");
+  //printf("\nlength, ijk, kij, jki");
   for (i = 0; i < ITERS; i++) {
     printf("\n%d, ", BASE+(i+1)*DELTA);
     for (j = 0; j < OPTIONS; j++) {
       if (j != 0) printf(", ");
       printf("%ld", (long int)((double)(CPG)*(double)
-		 (GIG * time_stamp[j][i].tv_sec + time_stamp[j][i].tv_nsec)));
+     (GIG * time_stamp[j][i].tv_sec + time_stamp[j][i].tv_nsec)));
     }
   }
 
-  printf("\n");
+  //printf("\n");
   
 }/* end main */
 
@@ -124,11 +137,11 @@ matrix_ptr new_matrix(long int len)
   if (len > 0) {
     data_t *data = (data_t *) calloc(len*len, sizeof(data_t));
     if (!data) {
-	  free((void *) result);
-	  printf("\n COULDN'T ALLOCATE STORAGE \n", result->len);
-	  return NULL;  /* Couldn't allocate storage */
-	}
-	result->data = data;
+    free((void *) result);
+    printf("\n COULDN'T ALLOCATE STORAGE \n", result->len);
+    return NULL;  /* Couldn't allocate storage */
+  }
+  result->data = data;
   }
   else result->data = NULL;
 
@@ -214,7 +227,7 @@ void mmm_ijk(matrix_ptr a, matrix_ptr b, matrix_ptr c)
     for (j = 0; j < length; j++) {
       sum = IDENT;
       for (k = 0; k < length; k++)
-	sum += a0[i*length+k] * b0[k*length+j];
+  sum += a0[i*length+k] * b0[k*length+j];
       c0[i*length+j] += sum;
     }
 }
@@ -235,7 +248,7 @@ void mmm_kij(matrix_ptr a, matrix_ptr b, matrix_ptr c)
     for (i = 0; i < length; i++) {
       r = a0[i*length+k];
       for (j = 0; j < length; j++)
-	c0[i*length+j] += r*b0[k*length+j];
+  c0[i*length+j] += r*b0[k*length+j];
     }
 }
 
@@ -255,6 +268,6 @@ void mmm_jki(matrix_ptr a, matrix_ptr b, matrix_ptr c)
     for (k = 0; k < length; k++) {
       r = b0[k*length+j];
       for (i = 0; i < length; i++)
-	c0[i*length+j] += a0[i*length+k]*r;
+  c0[i*length+j] += a0[i*length+k]*r;
     }
 }
