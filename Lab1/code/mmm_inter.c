@@ -37,6 +37,7 @@ main(int argc, char *argv[])
     return 0;
   }
 
+  // input args
   BASE  = strtol(argv[1],NULL,10);
   DELTA = strtol(argv[2],NULL,10);
   ITERS = strtol(argv[3],NULL,10);
