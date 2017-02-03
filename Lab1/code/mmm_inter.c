@@ -17,6 +17,8 @@
 #define OPTIONS 3
 #define IDENT 0
 
+#define FILE_PREFIX ((const unsigned char*) "doubleMMM_")
+
 typedef double data_t;
 
 /* Create abstract data type for matrix */
@@ -62,13 +64,22 @@ main(int argc, char *argv[])
 
   //printf("\n Hello World -- MMM \n");
 
+  char filename [255] = {0};
+  FILE *fp;
+
+  sprintf(filename, "%sI%d_D%d.csv", FILE_PREFIX, ITERS, DELTA);
+  printf("Current file: %s\n", filename);
+
   // declare and initialize the matrix structure
   matrix_ptr a0 = new_matrix(MAXSIZE);
   init_matrix(a0, MAXSIZE);
+
   matrix_ptr b0 = new_matrix(MAXSIZE);
   init_matrix(b0, MAXSIZE);
+
   matrix_ptr c0 = new_matrix(MAXSIZE);
   zero_matrix(c0, MAXSIZE);
+
 
   OPTION = 0;
   for (i = 0; i < ITERS; i++) {
@@ -108,15 +119,17 @@ main(int argc, char *argv[])
     }
   }
 
-  //printf("\nlength, ijk, kij, jki");
+  fp = fopen(filename,"w");
+  //fprintf(fp,"\nlength, ijk, kij, jki");
   for (i = 0; i < ITERS; i++) {
-    printf("\n%d, ", BASE+(i+1)*DELTA);
+    fprintf(fp,"\n%d, ", BASE+(i+1)*DELTA);
     for (j = 0; j < OPTIONS; j++) {
-      if (j != 0) printf(", ");
-      printf("%ld", (long int)((double)(CPG)*(double)
+      if (j != 0) fprintf(fp,", ");
+      fprintf(fp,"%ld", (long int)((double)(CPG)*(double)
      (GIG * time_stamp[j][i].tv_sec + time_stamp[j][i].tv_nsec)));
     }
   }
+  fclose(fp);
 
   //printf("\n");
   
