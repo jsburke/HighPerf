@@ -90,6 +90,24 @@ int matrix_init(matrix_ptr src, lint len)
 	else return 0;
 }
 
+int matrix_zero(matrix_ptr src, lint len)
+{
+	lint i,j;
+
+	if(len > 0)
+	{
+		src->len = len;
+		for(i = 0; i < len*len; i++) src->data[i] = (data_t)IDENT;
+		return 1;
+	}
+	else return 0;
+}
+
+data_t* matrix_get_start(matrix_ptr src)
+{
+	return src->data;
+}
+
 //---------------------------------------------------------------------
 //
 // timespec function
