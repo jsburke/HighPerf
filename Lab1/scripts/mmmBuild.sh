@@ -29,3 +29,4 @@ gcc -O1 -lrt mmm_inter.c -o mmm_inter
 ./mmm_inter 0 64 10
 ./mmm_inter 0 64 12
 mv *.csv ./part2_data/
+rm mmm_inter

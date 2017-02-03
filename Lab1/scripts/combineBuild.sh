@@ -26,3 +26,4 @@ gcc -O1 -lrt combine2d.c -o combine2d
 ./combine2d 64 160
 ./combine2d 64 320
 mv *.csv ./part1_data/
+rm combine2d
