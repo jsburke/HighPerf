@@ -97,6 +97,7 @@ main(int argc, char *argv[])
      (GIG * time_stamp[j][i].tv_sec + time_stamp[j][i].tv_nsec)));
     }
   }
+  fclose(fp);
 
   //printf("\n");
   
