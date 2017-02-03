@@ -67,7 +67,7 @@ main(int argc, char *argv[])
   char filename [255] = {0};
   FILE *fp;
 
-  sprintf(filename, "%sI%d_D%d.csv", FILE_PREFIX, ITERS, DELTA);
+  sprintf(filename, "%sB%d_I%d_D%d.csv", FILE_PREFIX, BASE, ITERS, DELTA);
   printf("Current file: %s\n", filename);
 
   // declare and initialize the matrix structure
