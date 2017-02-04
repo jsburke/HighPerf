@@ -2,12 +2,16 @@
 
 echo "building and running transpose"
 curdir=${PWD##*/}
-if [! "$curdir" == "code" ]; then
+if [ $curdir != "code" ]
+	then
 	echo "please run in code directory"
 	exit
 fi
 
-if [! -d "part3_data" ];then
+if [ -d ./part3_data ]
+	then
+	echo "part3_data directory found"
+else
 	echo "making directory for data output files"
 	mkdir part3_data
 fi
