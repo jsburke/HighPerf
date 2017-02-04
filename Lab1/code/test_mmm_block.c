@@ -7,18 +7,21 @@
 #include <time.h>
 #include <math.h>
 
-#define GIG 1000000000
-#define CPG 2.9           // Cycles per GHz -- Adjust to your computer
+#define CPS 2.9e9           // Cycles per second -- Adjust to your computer
+
+#define MAX_SUBTEST_TIME 30.0
 
 #define BASE  0
 #define ITERS 20
 #define DELTA 113
 
-#define BSZS 4
+#define BSZS 6
 #define INIT_BSIZE 2
 #define BSIZE_MUL 2
 
 #define IDENT 0
+
+#define FILE_PREFIX ((const unsigned char*) "mmmBlock_")
 
 typedef double data_t;
 
@@ -28,6 +31,7 @@ typedef struct {
   data_t *data;
 } matrix_rec, *matrix_ptr;
 
+double ts_interval(struct timespec ts);
 void mmm_bijk(matrix_ptr a, matrix_ptr b, matrix_ptr c, long int bsize);
 
 /*****************************************************************************/
@@ -35,7 +39,7 @@ int main(int argc, char *argv[])
 {
   struct timespec diff(struct timespec start, struct timespec end);
   struct timespec time1, time2;
-  struct timespec time_stamp[BSZS+1][ITERS+1];
+  double time_stamp[BSZS+1][ITERS+1];
   int clock_gettime(clockid_t clk_id, struct timespec *tp);
   matrix_ptr new_matrix(long int len);
   int set_matrix_length(matrix_ptr m, long int index);
@@ -44,13 +48,14 @@ int main(int argc, char *argv[])
   int zero_matrix(matrix_ptr m, long int len);
   void mmm_bijk(matrix_ptr a, matrix_ptr b, matrix_ptr c, long int bsize);
 
-
   long int i, j, k;
   long int time_sec, time_ns;
+  double latest_time;
   long int MAXSIZE = BASE+(ITERS+1)*DELTA;
   long int bsize, bsz_index;
+  int max_bsize;
 
-  printf("\n Hello World -- MMM \n");
+  printf("test_mmm_block\n");
 
   // declare and initialize the matrix structure
   matrix_ptr a0 = new_matrix(MAXSIZE);
@@ -60,35 +65,61 @@ int main(int argc, char *argv[])
   matrix_ptr c0 = new_matrix(MAXSIZE);
   zero_matrix(c0, MAXSIZE);
 
+  for(i=0; i<=BSZS; i++) {
+    for(j=0; j<=ITERS; j++) {
+      time_stamp[i][j] = 0;
+    }
+  }
+
   for (bsize = INIT_BSIZE, bsz_index = 0; 
        bsz_index < BSZS;
-       bsize *= BSIZE_MUL, bsz_index++) {
-    printf("\nbsize = %ld", bsize);
-    for (i = 0; i < ITERS; i++) {
+       bsize *= BSIZE_MUL, bsz_index++)
+  {
+    printf("bsize = %ld\n", bsize);
+    max_bsize = bsize; /* For generating output filename */
+    latest_time = 0;
+    for (i = 0; (i < ITERS) && (latest_time < MAX_SUBTEST_TIME); i++) {
       set_matrix_length(a0,BASE+(i+1)*DELTA);
       set_matrix_length(b0,BASE+(i+1)*DELTA);
       set_matrix_length(c0,BASE+(i+1)*DELTA);
+      printf("bsize = %ld, iter = %ld, Mx size = %ld",
+                                             bsize, i, BASE+(i+1)*DELTA);
       clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
       mmm_bijk(a0, b0, c0, bsize);
       clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
-      time_stamp[bsz_index][i] = diff(time1,time2);
-      printf("\niter = %ld", i);
+      latest_time = ts_interval(diff(time1,time2));
+      time_stamp[bsz_index][i] = latest_time;
+      printf("; time: %5.3f\n", latest_time);
     }
   }
 
-  printf("\nlength, ijk, kij, jki");
+  char filename [255] = {0};
+  FILE *fp;
+  sprintf(filename, "%sMB%d.csv", FILE_PREFIX, max_bsize);
+  printf("Writing collected stats to: %s\n", filename);
+  fp = fopen(filename,"w");
+  for (bsize = INIT_BSIZE, bsz_index = 0; 
+       bsz_index < BSZS;
+       bsize *= BSIZE_MUL, bsz_index++)
+  {
+    fprintf(fp,"%ld", bsize);
+    for (i = 0; i < ITERS; i++) {
+      fprintf(fp, ", %ld", (long)(CPS * time_stamp[j][i]));
+    }
+    fprintf(fp,"\n");
+  }
+  fclose(fp);
+
+  printf("length,  bsize 2,  bsize 4, ...\n");
   for (i = 0; i < ITERS; i++) {
-    printf("\n%ld, ", BASE+(i+1)*DELTA);
+    printf("%ld", BASE+(i+1)*DELTA);
     for (j = 0, bsize = INIT_BSIZE;
          j < BSZS;
          bsize *= BSIZE_MUL, j++) {
-      if (j != 0) printf(", ");
-      printf("%ld", (long int)((double)(CPG)*(double)
-		 (GIG * time_stamp[j][i].tv_sec + time_stamp[j][i].tv_nsec)));
+      printf(", %ld", (long)(CPS * time_stamp[j][i]));
     }
+    printf("\n");
   }
-
-  printf("\n");
   
 }/* end main */
 
@@ -178,6 +209,11 @@ struct timespec diff(struct timespec start, struct timespec end)
     temp.tv_nsec = end.tv_nsec-start.tv_nsec;
   }
   return temp;
+}
+
+double ts_interval(struct timespec ts)
+{
+  return ((double) ts.tv_sec) + ((double) ts.tv_nsec)/1.0e9;
 }
 
 /*************************************************/
