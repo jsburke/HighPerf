@@ -13,7 +13,7 @@ if [! -d "part3_data" ];then
 fi
 
 echo "compile transpose"
-gcc -O1 -lrt test_transpose.c -o test_transpose
+gcc -O1 -lrt test_transpose.c -o transpose
 
 # following will need updates once blocking is implemented
 echo "run tests"
