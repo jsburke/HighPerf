@@ -1,4 +1,27 @@
 #!/bin/bash
+#
+# This script generates all the data for part 1 of the assignment
+#
+# To plot output:
+#  * Start MATLAB
+#  * Using the file navigator ("Current Folder" pane in upper-left) go into
+#    the directory HighPerf/Lab1/matlabUtil
+#  * In the MATLAB Command Window (bottom-right) type:
+#
+#        graph_2d('../code/doubleMul_I320_D16.csv');
+#
+#    (changing the CSV filename as needed)
+
+curdir=${PWD##*/}
+if [ ! "$curdir" == "code" ]; then
+  echo "This script should be run from within the 'code' directory"
+  exit
+fi
+
+if [ ! -d "part1_data" ]; then
+  mkdir part1_data
+fi
+
 gcc -O1 -lrt combine2d.c -o combine2d
 #       DELTA ITERS
 ./combine2d 2 10

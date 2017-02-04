@@ -29,7 +29,7 @@ typedef struct {
 } vec_rec, *vec_ptr;
 
 /*****************************************************************************/
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
   int DELTA, ITERS;
 
@@ -90,7 +90,7 @@ main(int argc, char *argv[])
 
   fp = fopen(filename,"w");
   for (i = 0; i < ITERS; i++) {
-    fprintf(fp,"\n%d, ", BASE+(i+1)*DELTA);
+    fprintf(fp,"\n%ld, ", BASE+(i+1)*DELTA);
     for (j = 0; j < OPTIONS; j++) {
       if (j != 0) fprintf(fp,", ");
       fprintf(fp,"%ld", (long int)((double)(CPG)*(double)
@@ -119,7 +119,7 @@ vec_ptr new_vec(long int len)
     data_t *data = (data_t *) calloc(len*len, sizeof(data_t));
     if (!data) {
     free((void *) result);
-    printf("\n COULDN'T ALLOCATE STORAGE \n", result->len);
+    printf("\n COULDN'T ALLOCATE STORAGE (%ld BYTES)\n", result->len);
     return NULL;  /* Couldn't allocate storage */
   }
   result->data = data;
