@@ -7,7 +7,7 @@
 #define GIG 1000000000
 #define CPG 2.9
 
-#define OPTIONS 1
+#define OPTIONS 2
 #define IDENT 0
 
 #define FILE_PREFIX ((const unsigned char*) "doubleTranspose_")
@@ -26,7 +26,8 @@ lint matrix_get_length(matrix_ptr src);
 int matrix_init(matrix_ptr src, lint len);
 int matrix_zero(matrix_ptr src, lint len);
 data_t* matrix_get_start(matrix_ptr src);
-void matrix_transpose(matrix_ptr dst, matrix_ptr src);
+void matrix_transpose_linsrc(matrix_ptr dst, matrix_ptr src);
+void matrix_transpose_lindst(matrix_ptr dst, matrix_ptr src);
 
 int clock_gettime(clockid_t clk_id, struct timespec *tp);
 struct timespec diff(struct timespec start, struct timespec end);
@@ -66,7 +67,7 @@ main(int argc, char* argv[])
   matrix_ptr src = matirx_new(MAXSIZE);
   matrix_init(src, MAXSIZE);
   matrix_ptr dst = matirx_new(MAXSIZE);
-  //shouldn't need to initialize since it is only being written to
+  matrix_zero(dst, MAXSIZE);
 
   OPTION = 0;
   for(i = 0; i < ITERS; i++)
@@ -75,10 +76,22 @@ main(int argc, char* argv[])
     matrix_set_length(src,CURR_SIZE);
     matrix_set_length(dst,CURR_SIZE);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
-    matrix_transpose(dst, src);
+    matrix_transpose_linsrc(dst, src);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
     time_stamp[OPTION][i] = diff(time1,time2);
   }
+
+  OPTION++;
+  for(i = 0; i < ITERS; i++)
+  {
+    CURR_SIZE = BASE+(i+1)*DELTA;
+    matrix_set_length(src,CURR_SIZE);
+    matrix_set_length(dst,CURR_SIZE);
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
+    matrix_transpose_lindst(dst, src);
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
+    time_stamp[OPTION][i] = diff(time1,time2);
+  }  
 
   fp = fopen(filename,"w");
   for(i = 0; i < ITERS; i++)
@@ -168,7 +181,7 @@ data_t* matrix_get_start(matrix_ptr src)
 	return src->data;
 }
 
-void matrix_transpose(matrix_ptr dst, matrix_ptr src)
+void matrix_transpose_linsrc(matrix_ptr dst, matrix_ptr src)
 {
   int i,j;
 
@@ -180,6 +193,21 @@ void matrix_transpose(matrix_ptr dst, matrix_ptr src)
   {
     for(j = 0; j < len; j++)
       dst_d[j*len + i] = src_d[i*len + j];
+  }
+}
+
+void matrix_transpose_lindst(matrix_ptr dst, matrix_ptr src)
+{
+  int i,j;
+
+  lint len = matrix_get_length(src);
+  data_t* dst_d = matrix_get_start(dst);
+  data_t* src_d = matrix_get_start(src);
+
+  for(i = 0; i < len; i++)
+  {
+    for(j = 0; j < len; j++)
+      dst_d[i*len + j] = src_d[j*len + i];
   }
 }
 
