@@ -9,7 +9,7 @@
 
 #define CPS 2.9e9           // Cycles per second -- Adjust to your computer
 
-#define MAX_SUBTEST_TIME 30.0
+#define MAX_SUBTEST_TIME 60.0
 
 #define BASE  0
 #define ITERS 20
@@ -97,30 +97,23 @@ int main(int argc, char *argv[])
   FILE *fp;
   sprintf(filename, "%sMB%d.csv", FILE_PREFIX, max_bsize);
   printf("Writing collected stats to: %s\n", filename);
+  printf("length,      bsize 2,      bsize 4, ...\n");
   fp = fopen(filename,"w");
-  for (bsize = INIT_BSIZE, bsz_index = 0; 
-       bsz_index < BSZS;
-       bsize *= BSIZE_MUL, bsz_index++)
-  {
-    fprintf(fp,"%ld", bsize);
-    for (i = 0; i < ITERS; i++) {
-      fprintf(fp, ", %ld", (long)(CPS * time_stamp[j][i]));
+  for (i = 0; i < ITERS; i++) {
+    printf("%5ld", BASE+(i+1)*DELTA);
+    fprintf(fp,"%ld", BASE+(i+1)*DELTA);
+    for (bsize = INIT_BSIZE, bsz_index = 0; 
+         bsz_index < BSZS;
+         bsize *= BSIZE_MUL, bsz_index++)
+    {
+      printf(", %12ld", (long)(CPS * time_stamp[bsz_index][i]));
+      fprintf(fp, ", %ld", (long)(CPS * time_stamp[bsz_index][i]));
     }
     fprintf(fp,"\n");
+    printf("\n");
   }
   fclose(fp);
 
-  printf("length,  bsize 2,  bsize 4, ...\n");
-  for (i = 0; i < ITERS; i++) {
-    printf("%ld", BASE+(i+1)*DELTA);
-    for (j = 0, bsize = INIT_BSIZE;
-         j < BSZS;
-         bsize *= BSIZE_MUL, j++) {
-      printf(", %ld", (long)(CPS * time_stamp[j][i]));
-    }
-    printf("\n");
-  }
-  
 }/* end main */
 
 /**********************************************/
