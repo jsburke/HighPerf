@@ -1,5 +1,5 @@
 /*****************************************************************************/
-// gcc -O1 -o test_mmm_inter test_mmm_inter.c -lrt
+// gcc -O1 test_mmm_block.c -lrt -o tmb
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,7 +8,7 @@
 #include <math.h>
 
 #define GIG 1000000000
-#define CPG 2.0           // Cycles per GHz -- Adjust to your computer
+#define CPG 2.9           // Cycles per GHz -- Adjust to your computer
 
 #define BASE  0
 #define ITERS 20
@@ -31,7 +31,7 @@ typedef struct {
 void mmm_bijk(matrix_ptr a, matrix_ptr b, matrix_ptr c, long int bsize);
 
 /*****************************************************************************/
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
   struct timespec diff(struct timespec start, struct timespec end);
   struct timespec time1, time2;
@@ -72,13 +72,13 @@ main(int argc, char *argv[])
       mmm_bijk(a0, b0, c0, bsize);
       clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
       time_stamp[bsz_index][i] = diff(time1,time2);
-      printf("\niter = %d", i);
+      printf("\niter = %ld", i);
     }
   }
 
   printf("\nlength, ijk, kij, jki");
   for (i = 0; i < ITERS; i++) {
-    printf("\n%d, ", BASE+(i+1)*DELTA);
+    printf("\n%ld, ", BASE+(i+1)*DELTA);
     for (j = 0, bsize = INIT_BSIZE;
          j < BSZS;
          bsize *= BSIZE_MUL, j++) {
@@ -109,7 +109,7 @@ matrix_ptr new_matrix(long int len)
     data_t *data = (data_t *) calloc(len*len, sizeof(data_t));
     if (!data) {
       free((void *) result);
-      printf("\n COULDN'T ALLOCATE STORAGE \n", result->len);
+      printf("\n COULDN'T ALLOCATE STORAGE (%ld bytes wanted)\n", result->len);
       return NULL;  /* Couldn't allocate storage */
     }
     result->data = data;
