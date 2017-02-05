@@ -205,9 +205,9 @@ void matrix_transpose_linsrc(matrix_ptr dst, matrix_ptr src, int block_sz)
     for(j = 0; j < len; j += block_sz)
     {
       // transpose in the block at [i,j]
-      for(k = i; k < (i + block_sz); k++)
+      for(k = i; (k < (i + block_sz)) && (k < len); k++)
       {
-        for(m = j; m < (j + block_sz); m++)
+        for(m = j; (m < (j + block_sz)) && (m < len); m++)
           dst_d[k + (m*len)] = src_d[m + (k*len)];
       }
     }
@@ -227,9 +227,9 @@ void matrix_transpose_lindst(matrix_ptr dst, matrix_ptr src, int block_sz)
     for(j = 0; j < len; j += block_sz)
     {
       // transpose in the block at [i,j]
-      for(k = i; k < (i + block_sz); k++)
+      for(k = i; (k < (i + block_sz)) && (k < len); k++)
       {
-        for(m = j; m < (j + block_sz); m++)
+        for(m = j; (m < (j + block_sz)) && (m < len); m++)
           dst_d[m + (k*len)] = src_d[k + (m*len)];
       }
     }
