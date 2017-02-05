@@ -8,12 +8,12 @@ if [ $curdir != "code" ]
 	exit
 fi
 
-if [ -d ./part3_data ]
+if [ -d ./part4_data ]
 	then
 	echo "part4_data directory found"
 else
 	echo "making directory for data output files"
-	mkdir part3_data
+	mkdir part4_data
 fi
 
 echo "compile blockpose"
