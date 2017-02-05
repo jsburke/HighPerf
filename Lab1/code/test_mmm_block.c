@@ -21,8 +21,6 @@
 
 #define IDENT 0
 
-#define FILE_PREFIX ((const unsigned char*) "mmmBlock_")
-
 typedef double data_t;
 
 /* Create abstract data type for matrix */
@@ -94,25 +92,35 @@ int main(int argc, char *argv[])
   }
 
   char filename [255] = {0};
-  FILE *fp;
-  sprintf(filename, "%sMB%d.csv", FILE_PREFIX, max_bsize);
+  FILE *fp_cyc;
+  FILE *fp_cpe;
+  double elem_count;
+  sprintf(filename, "mmmBlockCyc_MB%d.csv", max_bsize);
+  fp_cyc = fopen(filename,"w");
+  sprintf(filename, "mmmBlockCPE_MB%d.csv", max_bsize);
+  fp_cpe = fopen(filename,"w");
   printf("Writing collected stats to: %s\n", filename);
   printf("length,      bsize 2,      bsize 4, ...\n");
-  fp = fopen(filename,"w");
   for (i = 0; i < ITERS; i++) {
     printf("%5ld", BASE+(i+1)*DELTA);
-    fprintf(fp,"%ld", BASE+(i+1)*DELTA);
+    fprintf(fp_cyc,"%ld", BASE+(i+1)*DELTA);
+    fprintf(fp_cpe,"%ld", BASE+(i+1)*DELTA);
+    elem_count = ((double)(BASE+(i+1)*DELTA));
+    elem_count = elem_count*elem_count*elem_count;
     for (bsize = INIT_BSIZE, bsz_index = 0; 
          bsz_index < BSZS;
          bsize *= BSIZE_MUL, bsz_index++)
     {
       printf(", %12ld", (long)(CPS * time_stamp[bsz_index][i]));
-      fprintf(fp, ", %ld", (long)(CPS * time_stamp[bsz_index][i]));
+      fprintf(fp_cyc, ", %ld", (long)(CPS * time_stamp[bsz_index][i]));
+      fprintf(fp_cpe, ", %g", CPS * time_stamp[bsz_index][i] / elem_count);
     }
-    fprintf(fp,"\n");
+    fprintf(fp_cyc,"\n");
+    fprintf(fp_cpe,"\n");
     printf("\n");
   }
-  fclose(fp);
+  fclose(fp_cyc);
+  fclose(fp_cpe);
 
 }/* end main */
 
