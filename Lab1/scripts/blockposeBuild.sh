@@ -41,6 +41,6 @@ printf "\n"
 ./blockpose 4 1024 3 
 printf "\n"
 
-mv *.csv ./part3_data
+mv *.csv ./part4_data
 rm blockpose
 echo "blockpose complete"
