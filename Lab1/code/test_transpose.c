@@ -7,7 +7,7 @@
 #define GIG 1000000000
 #define CPG 2.9
 
-#define OPTIONS 2
+#define OPTIONS 1
 #define IDENT 0
 
 #define FILE_PREFIX ((const unsigned char*) "doubleTranspose_")
@@ -69,7 +69,7 @@ int main(int argc, char* argv[])
   matrix_ptr dst = matirx_new(MAXSIZE);
   matrix_zero(dst, MAXSIZE);
 
-  OPTION = 0;
+  OPTION = 0;/*
   for(i = 0; i < ITERS; i++)
   {
     CURR_SIZE = BASE+(i+1)*DELTA;
@@ -83,7 +83,7 @@ int main(int argc, char* argv[])
 
   matrix_zero(dst, MAXSIZE);
 
-  OPTION++;
+  OPTION++;*/
   for(i = 0; i < ITERS; i++)
   {
     CURR_SIZE = BASE+(i+1)*DELTA;

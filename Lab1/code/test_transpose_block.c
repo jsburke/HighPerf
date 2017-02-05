@@ -7,7 +7,7 @@
 #define GIG 1000000000
 #define CPG 2.9
 
-#define OPTIONS 2
+#define OPTIONS 1
 #define IDENT 0
 
 #define FILE_PREFIX ((const unsigned char*) "doubleBlockpose_")
@@ -89,11 +89,11 @@ int main(int argc, char* argv[])
   //printf("source linear done\n");
   //matrix_zero(dst, MAXSIZE);
 
-  
+  /*
   OPTION++;
   for(i = 0; i < ITERS; i++)
   {                                 // WARNING !!!!!!!!!!!!!
-    CURR_SIZE = /*BASE+*/(i+1)*DELTA; //COMMENT OUT BASE IF THIS IS UNCOMMENTED
+    CURR_SIZE = /*BASE+(i+1)*DELTA; //COMMENT OUT BASE IF THIS IS UNCOMMENTED
     matrix_set_length(src,CURR_SIZE);
     matrix_set_length(dst,CURR_SIZE);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
@@ -102,7 +102,7 @@ int main(int argc, char* argv[])
     time_stamp[OPTION][i] = diff(time1,time2);
   }  
   //printf("dest linear done\n");
-  
+  */
 
   fp = fopen(filename,"w");
   for(i = 0; i < ITERS; i++)
