@@ -34,7 +34,7 @@ struct timespec diff(struct timespec start, struct timespec end);
 
 
 
-main(int argc, char* argv[])
+int main(int argc, char* argv[])
 {
   int BASE, DELTA, ITERS;
 
@@ -81,6 +81,8 @@ main(int argc, char* argv[])
     time_stamp[OPTION][i] = diff(time1,time2);
   }
 
+  matrix_zero(dst, MAXSIZE);
+
   OPTION++;
   for(i = 0; i < ITERS; i++)
   {
@@ -106,6 +108,7 @@ main(int argc, char* argv[])
   }
   fclose(fp);
 
+  return 0;
 }
 
 
