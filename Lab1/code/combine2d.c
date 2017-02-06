@@ -9,8 +9,9 @@
 
 #define GIG 1000000000
 #define CPG 2.9           // Cycles per GHz -- Adjust to your computer
+#define CNS 2.899         // Cycles per nanosecon
 
-#define BASE  0
+//#define BASE  0
 //#define ITERS 30
 //#define DELTA 200
 
@@ -31,16 +32,17 @@ typedef struct {
 /*****************************************************************************/
 int main(int argc, char *argv[])
 {
-  int DELTA, ITERS;
+  int BASE, DELTA, ITERS;
 
-    if(argc != 3)
+    if(argc != 4)
   {
     printf("num args wrong\n");
     return 0;
   }
   
-  DELTA = strtol(argv[1],NULL,10);
-  ITERS = strtol(argv[2],NULL,10);
+  BASE  = strtol(argv[1],NULL,10);
+  DELTA = strtol(argv[2],NULL,10);
+  ITERS = strtol(argv[3],NULL,10);
 
   int OPTION;
   struct timespec diff(struct timespec start, struct timespec end);
@@ -62,7 +64,7 @@ int main(int argc, char *argv[])
   char filename [255] = {0};
   FILE *fp;
 
-  sprintf(filename, "%sI%d_D%d.csv", FILE_PREFIX, ITERS, DELTA);
+  sprintf(filename, "%sB%d_I%d_D%d.csv", FILE_PREFIX, BASE, ITERS, DELTA);
   printf("Current file: %s\n", filename);
 
   // declare and initialize the vector structure
@@ -93,7 +95,7 @@ int main(int argc, char *argv[])
     fprintf(fp,"\n%ld, ", BASE+(i+1)*DELTA);
     for (j = 0; j < OPTIONS; j++) {
       if (j != 0) fprintf(fp,", ");
-      fprintf(fp,"%ld", (long int)((double)(CPG)*(double)
+      fprintf(fp,"%ld", (long int)((double)(CNS)*(double)(CPG)*(double)
      (GIG * time_stamp[j][i].tv_sec + time_stamp[j][i].tv_nsec)));
     }
   }
