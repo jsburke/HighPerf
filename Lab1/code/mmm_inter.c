@@ -9,6 +9,7 @@
 
 #define GIG 1000000000
 #define CPG 2.9           // Cycles per GHz -- Adjust to your computer
+#define CNS 2.899
 
 //#define BASE  0
 //#define ITERS 5
@@ -125,7 +126,7 @@ main(int argc, char *argv[])
     fprintf(fp,"\n%d, ", BASE+(i+1)*DELTA);
     for (j = 0; j < OPTIONS; j++) {
       if (j != 0) fprintf(fp,", ");
-      fprintf(fp,"%ld", (long int)((double)(CPG)*(double)
+      fprintf(fp,"%ld", (long int)((double)(CNS)*(double)(CPG)*(double)
      (GIG * time_stamp[j][i].tv_sec + time_stamp[j][i].tv_nsec)));
     }
   }
