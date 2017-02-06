@@ -19,9 +19,9 @@
 #define IDENT 1
 #define OP *
 
-#define FILE_PREFIX ((const unsigned char*) "doubleMul_")
+#define FILE_PREFIX ((const unsigned char*) "intMul_")
 
-typedef double data_t;
+typedef int data_t;
 
 /* Create abstract data type for vector */
 typedef struct {
