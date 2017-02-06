@@ -46,3 +46,5 @@ dkms.conf
 *.csv
 # Emacs editor backup files
 *~
+# directory for temps
+ignore/
