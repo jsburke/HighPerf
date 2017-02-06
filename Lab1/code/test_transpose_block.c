@@ -6,8 +6,9 @@
 
 #define GIG 1000000000
 #define CPG 2.9
+#define CNS 2.899
 
-#define OPTIONS 1
+#define OPTIONS 2
 #define IDENT 0
 
 #define FILE_PREFIX ((const unsigned char*) "doubleBlockpose_")
@@ -82,27 +83,27 @@ int main(int argc, char* argv[])
     matrix_set_length(src,CURR_SIZE);
     matrix_set_length(dst,CURR_SIZE);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
-    matrix_transpose_linsrc(dst, src, BLOCK_SZ);
+    matrix_transpose_lindst(dst, src, BLOCK_SZ);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
     time_stamp[OPTION][i] = diff(time1,time2);
   }
   //printf("source linear done\n");
   //matrix_zero(dst, MAXSIZE);
-
-  /*
+  
+  
   OPTION++;
   for(i = 0; i < ITERS; i++)
   {                                 // WARNING !!!!!!!!!!!!!
-    CURR_SIZE = /*BASE+(i+1)*DELTA; //COMMENT OUT BASE IF THIS IS UNCOMMENTED
+    CURR_SIZE = /*BASE+*/(i+1)*DELTA; //COMMENT OUT BASE IF THIS IS UNCOMMENTED
     matrix_set_length(src,CURR_SIZE);
     matrix_set_length(dst,CURR_SIZE);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
-    matrix_transpose_lindst(dst, src, BLOCK_SZ);
+    matrix_transpose_linsrc(dst, src, BLOCK_SZ);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
     time_stamp[OPTION][i] = diff(time1,time2);
   }  
   //printf("dest linear done\n");
-  */
+  
 
   fp = fopen(filename,"w");
   for(i = 0; i < ITERS; i++)
@@ -111,7 +112,7 @@ int main(int argc, char* argv[])
     for(j = 0; j < OPTIONS; j++)
     {
       if(j != 0) fprintf(fp, ", ");
-      fprintf(fp, "%ld", (long int)((double)(CPG)*(double)
+      fprintf(fp, "%ld", (long int)((double)(CNS)*(double)(CPG)*(double)
      (GIG * time_stamp[j][i].tv_sec + time_stamp[j][i].tv_nsec)));
     }
   }
