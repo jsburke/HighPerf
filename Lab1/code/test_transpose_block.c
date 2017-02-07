@@ -112,7 +112,7 @@ int main(int argc, char* argv[])
     for(j = 0; j < OPTIONS; j++)
     {
       if(j != 0) fprintf(fp, ", ");
-      fprintf(fp, "%ld", (long int)((double)(CNS)*(double)(CPG)*(double)
+      if(j == 0)fprintf(fp, "%ld", (long int)((double)(CNS)*(double)(CPG)*(double)
      (GIG * time_stamp[j][i].tv_sec + time_stamp[j][i].tv_nsec)));
     }
   }
