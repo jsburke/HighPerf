@@ -48,3 +48,4 @@ dkms.conf
 *~
 # directory for temps
 ignore/
+scratch/
