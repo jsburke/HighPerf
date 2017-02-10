@@ -163,8 +163,14 @@ int main(int argc, char *argv[])
     time_stamp[OPTION][i] = diff(time1,time2);
   }
   
-  /* output times */
   fp = fopen(filename,"w");
+  // produce column titles for graphing
+  for(i = 0; i < (OPTIONS + 1); i++)
+  {
+    if (i == 0) fprintf(fp, "x-axis, ");
+    else fprintf(fp, "combine%d, ", i);
+  }
+
   for (i = 0; i < ITERS; i++) {
     fprintf(fp, "\n%ld,  ", BASE+(i+1)*DELTA);
     for (j = 0; j < OPTIONS; j++) {
