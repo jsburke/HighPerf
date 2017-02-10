@@ -6,6 +6,7 @@ data = csvread(file,1,0);
 fid = fopen(file);
 legend_names = strsplit(fgetl(fid),',');
 legend_names = legend_names(2:end-1);
+fclose(fid);
 
 figure; hold on;
 plots = [];
