@@ -1,9 +1,12 @@
-function graph_combine(file, legend_names)
+function graph_combine(file)
 
-data = csvread(file);
-% consider popping the first row for column names
-% to avoid needing the names entered everytime as args
-% should be easy for C to generate
+data = csvread(file,1,0);
+
+%processing to read column headers
+fid = fopen(file);
+legend_names = strsplit(fgetl(fid),',');
+legend_names = legend_names(2:end-1);
+
 figure; hold on;
 plots = [];
 legs  = [];
@@ -25,7 +28,7 @@ for i = 2:num_cols
     
     %  Where the plotting actually happens
     cur_plot = plot(x_axis, data(:,i), plot_feature);
-    cur_leg  = legend_names(i,:);
+    cur_leg  = legend_names(i-1);
     
     if color_index == color_len
        color_index = 1; 
