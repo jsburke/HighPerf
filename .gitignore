@@ -49,3 +49,4 @@ dkms.conf
 # directory for temps
 ignore/
 scratch/
+**/part*_data/
