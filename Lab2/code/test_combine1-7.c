@@ -9,9 +9,9 @@
 #include <math.h>
 
 #define SIZE 10000000
-#define ITERS 20
-#define DELTA 10
-#define BASE 0
+// #define ITERS 20
+// #define DELTA 10
+// #define BASE 0
 
 #define GIG 1000000000
 #define CPG 2.9           // Cycles per GHz -- Adjust to your computer
@@ -19,6 +19,8 @@
 #define OPTIONS 7
 #define IDENT 1.0
 #define OP *
+
+#define FILE_PREFIX ((const unsigned char*) "doubleMulC7_")
 
 typedef double data_t;
 
@@ -34,8 +36,39 @@ typedef struct {
 //};
 
 /*****************************************************************************/
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
+
+  int BASE, DELTA, ITERS;
+
+  if(argc != 4)
+  {
+  	printf("num args wrong\n");
+  	return 0;
+  }
+
+  BASE  = strtol(argv[1], NULL, 10);
+  DELTA = strtol(argv[2], NULL, 10);
+  ITERS = strtol(argv[3], NULL, 10);
+
+  if(DELTA == 0)
+  {
+  	printf("DELTA must be greater than zero\n");
+  	return 0;
+  }
+
+  if(ITERS == 0)
+  {
+  	printf("ITERS must be at least one\n");
+  	return 0;
+  }
+
+  char filename[255] = {0};
+  FILE *fp;
+
+  sprintf(filename, "%sB%d_D%d_I%d.csv", FILE_PREFIX, BASE, DELTA, ITERS);
+  printf("Current File: %s\n", filename);
+
   int OPTION;
   struct timespec diff(struct timespec start, struct timespec end);
   struct timespec time1, time2;
@@ -59,7 +92,7 @@ main(int argc, char *argv[])
   long long int time_sec, time_ns;
   long int MAXSIZE = BASE+(ITERS+1)*DELTA;
 
-  printf("\n Hello World -- psum examples\n");
+  //printf("\n Hello World -- psum examples\n");
 
   // declare and initialize the vector structure
   vec_ptr v0 = new_vec(MAXSIZE);
@@ -131,17 +164,19 @@ main(int argc, char *argv[])
   }
   
   /* output times */
+  fp = fopen(filename,"w");
   for (i = 0; i < ITERS; i++) {
-    printf("\n%d,  ", BASE+(i+1)*DELTA);
+    fprintf(fp, "\n%ld,  ", BASE+(i+1)*DELTA);
     for (j = 0; j < OPTIONS; j++) {
-      if (j != 0) printf(", ");
-       printf("%ld", (long int)((double)(CPG)*(double)
+      if (j != 0) fprintf(fp, ", ");
+       fprintf(fp, "%ld", (long int)((double)(CPG)*(double)
 		 (GIG * time_stamp[j][i].tv_sec + time_stamp[j][i].tv_nsec)));
     }
   }
-
+  fclose(fp);
 
   printf("\n");
+  return 0;
   
 }/* end main */
 
