@@ -5,7 +5,10 @@ data = csvread(file,1,0);
 %processing to read column headers
 fid = fopen(file);
 legend_names = strsplit(fgetl(fid),',');
-legend_names = legend_names(2:end-1);
+legend_names = legend_names(2:end);
+if length(legend_names(end)) == 1
+   legend_names = legend_names(1:end-1); %trim trailing crap 
+end
 fclose(fid);
 
 figure; hold on;
