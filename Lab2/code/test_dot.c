@@ -1,6 +1,12 @@
 // -*- C++ -*-
 //
 // gcc test_dot.c -lrt -o tdt && ./tdt
+//
+// NOTE:
+//   This program runs so quickly that the SpeedStep control (in kernel and/or
+// on-chip) doesn't catch up in time for the first test to be measured. A simple
+// say to get around this is to always compile the source first (as shown above)
+// but a better solution would be to run some kind of busy loop first.
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,13 +14,15 @@
 #include <time.h>
 #include <math.h>
 
+#define BASE 0
+#define DELTA 1000
 #define ITERS 20
 
-#define DELTA 1000
-#define BASE 0
 #define ITER_VECLEN(i) (BASE+((i)+1)*DELTA)
 
 double CPS = 2.9e9;    // Cycles per second -- Will be recomputed at runtime
+
+#define FILE_PREFIX ((const unsigned char*) "dotProd_")
 
 typedef double data_t;
 
@@ -47,9 +55,11 @@ typedef union {
 
 
 /* Each of variation of the task being benchmarked */
-#define METHODS 3
 double dotprod1(vec_ptr a, vec_ptr b);
 double dotprod2(vec_ptr a, vec_ptr b);
+double dotprod3(vec_ptr a, vec_ptr b);
+double dotprod4(vec_ptr a, vec_ptr b);
+#define METHODS 4
 
 
 /*****************************************************************************/
@@ -90,6 +100,16 @@ int main(int argc, char *argv[])
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
     time_stamp[i][1] = ts_diff(time1,time2);
 
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
+    dotprod3(v0, v1);
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
+    time_stamp[i][2] = ts_diff(time1,time2);
+
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
+    dotprod4(v0, v1);
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
+    time_stamp[i][3] = ts_diff(time1,time2);
+
   }
 
   clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &cal_end);
@@ -102,22 +122,34 @@ int main(int argc, char *argv[])
     printf("Computed CPS == %g\n", CPS);
   }
 
+  char filename[255] = {0};
+  FILE *fp;
+
+  sprintf(filename, "%sB%d_D%d_I%d.csv", FILE_PREFIX, BASE, DELTA, ITERS);
+  printf("Current File: %s\n", filename);
+  fp = fopen(filename,"w");
+
   /* output times */
-  printf("Vector Size, Simple Loop, Unrolled 2x\n");
+  fprintf(fp, "Vector Size, Simple Loop, Unrolled 2x, Two Accumulators, 2x Associativity, \n");
   for (i = 0; i < ITERS; i++) {
-    long int cycles;
-    printf("%ld", ((long int) ITER_VECLEN(i)));
+    double cycles;
+    fprintf(fp, "%ld", ((long int) ITER_VECLEN(i)));
 
-    cycles = (long int) (CPS * ts_sec(time_stamp[i][0]));
-    /* printf(", %ld", cycles); */
-    printf(", %f", ((double)cycles) / ((double) elements[i]));
+    cycles = CPS * ts_sec(time_stamp[i][0]);
+    fprintf(fp, ", %f", cycles / elements[i]);
 
-    cycles = (long int) (CPS * ts_sec(time_stamp[i][1]));
-    /* printf(", %ld", cycles); */
-    printf(", %f", ((double)cycles) / ((double) elements[i]));
+    cycles = CPS * ts_sec(time_stamp[i][1]);
+    fprintf(fp, ", %f", cycles / elements[i]);
 
-    printf("\n");
+    cycles = CPS * ts_sec(time_stamp[i][2]);
+    fprintf(fp, ", %f", cycles / elements[i]);
+
+    cycles = CPS * ts_sec(time_stamp[i][3]);
+    fprintf(fp, ", %f", cycles / elements[i]);
+
+    fprintf(fp, "\n");
   }
+  fclose(fp);
 
   return 0;
 }/* end main */
@@ -241,3 +273,48 @@ double dotprod2(vec_ptr a, vec_ptr b)
   }
   return acc;
 }
+
+/* Unrolling didn't help; let's try interleaving nondependent computations. */
+double dotprod3(vec_ptr a, vec_ptr b)
+{
+  long int i;
+  long int alen = get_vec_length(a);
+  long int blen = get_vec_length(b);
+  data_t *adata = get_vec_start(a);
+  data_t *bdata = get_vec_start(b);
+
+  data_t acc0 = 0;
+  data_t acc1 = 0;
+  if (alen == blen) {
+    for (i = 0; i < alen; i+=2) {
+      acc0 = acc0 + (adata[i] * bdata[i]);
+      acc1 = acc1 + (adata[i+1] * bdata[i+1]);
+    }
+    if (i < alen) {
+      acc0 = acc0 + (adata[i] * bdata[i]);
+    }
+  }
+  return acc0 + acc1;
+}
+
+/* Interleaving but with only one accumulator */
+double dotprod4(vec_ptr a, vec_ptr b)
+{
+  long int i;
+  long int alen = get_vec_length(a);
+  long int blen = get_vec_length(b);
+  data_t *adata = get_vec_start(a);
+  data_t *bdata = get_vec_start(b);
+
+  data_t acc = 0;
+  if (alen == blen) {
+    for (i = 0; i < alen; i+=2) {
+      acc = acc + (adata[i] * bdata[i]) + (adata[i+1] * bdata[i+1]);
+    }
+    if (i < alen) {
+      acc = acc + (adata[i] * bdata[i]);
+    }
+  }
+  return acc;
+}
+
