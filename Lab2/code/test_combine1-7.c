@@ -18,11 +18,11 @@
 
 #define OPTIONS 7
 #define IDENT 1.0
-#define OP *
+#define OP +
 
-#define FILE_PREFIX ((const unsigned char*) "doubleMulC7_")
+#define FILE_PREFIX ((const unsigned char*) "intAddC7_")
 
-typedef double data_t;
+typedef int data_t;
 
 /* Create abstract data type for vector */
 typedef struct {
@@ -69,8 +69,7 @@ int main(int argc, char *argv[])
   sprintf(filename, "%sB%d_D%d_I%d.csv", FILE_PREFIX, BASE, DELTA, ITERS);
   printf("Current File: %s\n", filename);
 
-  int OPTION;
-  struct timespec diff(struct timespec start, struct timespec end);
+  int OPTION;struct timespec diff(struct timespec start, struct timespec end);
   struct timespec time1, time2;
   struct timespec time_stamp[OPTIONS][ITERS+1];
   int clock_gettime(clockid_t clk_id, struct timespec *tp);
@@ -168,7 +167,7 @@ int main(int argc, char *argv[])
   for(i = 0; i < (OPTIONS + 1); i++)
   {
     if (i == 0) fprintf(fp, "x-axis, ");
-    else fprintf(fp, "combine%d, ", i);
+    else fprintf(fp, "combine%ld, ", i);
   }
 
   for (i = 0; i < ITERS; i++) {
