@@ -357,7 +357,7 @@ double dotprod4(vec_ptr a, vec_ptr b)
   data_t acc = 0;
   if (alen == blen) {
     for (i = 0; i < alen; i+=2) {
-      acc = acc + (adata[i] * bdata[i]) + (adata[i+1] * bdata[i+1]);
+      acc = acc + ((adata[i] * bdata[i]) + (adata[i+1] * bdata[i+1]));
     }
     if (i < alen) {
       acc = acc + (adata[i] * bdata[i]);
