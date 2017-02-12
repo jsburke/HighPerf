@@ -1,6 +1,6 @@
 /* -*- C++ -*- **************************************************************/
 
-// gcc -O1 test_branch.c -lrt -o tbr
+// gcc test_branch.c -lrt -o tbr
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -30,13 +30,24 @@ typedef struct {
 } vec_rec, *vec_ptr;
 
 /* ---------------------------------------------------------------------------
-| Make the CPU busy, and measure CPS (cycles per second)
+| Make the CPU busy, and measure CPS (cycles per second).
 |
-| Copy this code into other programs as desired
+| Explanation:
+| If tests are very fast, they can run so quickly that the SpeedStep control
+| (in kernel and/or on-chip) doesn't notice in time, and the first few tests
+| might finish while the CPU is still in its sleep state (about 800 MHz,
+| judging from my measurements)
+|   A simple way to get around this is to run some kind of busy-loop that
+| forces the OS and/or CPU to notice it needs to go to full clock speed.
+| We print out the results of the computation so the loop won't get optimised
+| away.
+|
+| Copy this code into other programs as desired. It provides three entry
+| points:
 |
 | double ts_sec(ts): converts a timespec into seconds
 | timespec ts_diff(ts1, ts2): computes interval between two timespecs
-| measure_cps()
+| measure_cps(): Does the busy loop and prints out measured CPS (cycles/sec)
 --------------------------------------------------------------------------- */
 double CPS = 2.9e9;    // Cycles per second -- Will be recomputed at runtime
 int clock_gettime(clockid_t clk_id, struct timespec *tp);
