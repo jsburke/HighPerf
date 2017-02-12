@@ -43,4 +43,4 @@ for i = 2:num_cols
     plots  = [plots ; cur_plot];
     legs = [legs ; cur_leg];
 end
-legend(plots, legs);
+legend(plots, legs, 'LOCATION', [0.15, 0.65, .25, .25]);
