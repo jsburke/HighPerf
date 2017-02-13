@@ -12,7 +12,7 @@
 #define CPG 2.9           // Cycles per GHz -- Adjust to your computer
 double CPS = 2.9e9;    // Cycles per second -- Will be recomputed at runtime
 
-#define OPTIONS 5
+#define OPTIONS 6
 #define IDENT 1.0
 #define OP *
 
@@ -36,6 +36,7 @@ double measure_cps(void);
 double basic_poly(double a[], double x, int degree);
 double horner_poly(double a[], double x, int degree);
 double estrin_poly(double a[], double x, int degree);
+double estrin_aggro(double a[], double x, int degree);
 double horner_inter(double a[], double x, int degree);
 double horner_reassoc(double a[], double x, int degree);
 
@@ -93,7 +94,7 @@ int main(int argc, char *argv[])
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
     calc += basic_poly(a, X_VAL, (i+1)*DEGREE);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
-     // printf("%lf\n", calc);
+    //printf("%lf\n", calc);
     time_stamp[OPTION][i] = ts_diff(time1,time2);
   }
 
@@ -102,7 +103,7 @@ int main(int argc, char *argv[])
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
     calc += horner_poly(a, X_VAL, (i+1)*DEGREE);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
-      //printf("%lf\n", calc);
+    //printf("%lf\n", calc);
     time_stamp[OPTION][i] = ts_diff(time1,time2);
   }
 
@@ -111,7 +112,7 @@ int main(int argc, char *argv[])
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
     calc += estrin_poly(a, X_VAL, (i+1)*DEGREE);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
-      //printf("%lf\n", calc);
+    //printf("%lf\n", calc);
     time_stamp[OPTION][i] = ts_diff(time1,time2);
   }
 
@@ -120,7 +121,7 @@ int main(int argc, char *argv[])
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
     calc += horner_inter(a, X_VAL, (i+1)*DEGREE);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
-      //printf("%lf\n", calc);
+    //printf("%lf\n", calc);
     time_stamp[OPTION][i] = ts_diff(time1,time2);
   }
   
@@ -133,6 +134,15 @@ int main(int argc, char *argv[])
     time_stamp[OPTION][i] = ts_diff(time1,time2);
   }
 
+  OPTION++;
+  for (i = 0; i < ITERS; i++) {
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
+    calc += estrin_aggro(a, X_VAL, (i+1)*DEGREE);
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
+    //printf("%lf\n", calc);
+    time_stamp[OPTION][i] = ts_diff(time1,time2);
+  }
+
   printf("%lf\n", calc);
 
   ////////////////////////////////////////////////////
@@ -140,7 +150,7 @@ int main(int argc, char *argv[])
   ////////////////////////////////////////////////////
 
   fp = fopen(filename,"w");
-  fprintf(fp, "degree, basic, horner, estrin, horner Interleaved, horner reassoc\n"); // kludge line one
+  fprintf(fp, "degree, basic, horner, estrin, horner Interleaved, horner reassoc, estrin aggro\n"); // kludge line one
 
   for (i = 0; i < ITERS; i++) {
     fprintf(fp, "%ld,  ", (i+1)*DEGREE); // i covers the degree
@@ -290,6 +300,29 @@ double estrin_poly(double a[], double x, int degree)
   {
     acc  += (a[i] + a[i+1] * x) * x_acc;
     x_acc *= x_sq;
+  }
+
+  for (; i <= degree; i++) // clean up
+  {
+    acc += a[i] * x_acc;
+  }
+
+  return acc;
+}
+
+//aggressive version of estrin
+double estrin_aggro(double a[], double x, int degree)
+{
+  long int i;
+  double x_sq  = x * x;
+  double acc  = a[0] + a[1] * x + a[2] * x_sq; 
+  double x_acc = x_sq * x;
+  double x_tr  = x_acc;
+
+  for(i = 3; i < degree; i += 3)
+  {
+    acc  += (a[i] + a[i+1] * x + a [i+2] * x_sq) * x_acc;
+    x_acc *= x_tr;
   }
 
   for (; i <= degree; i++) // clean up
