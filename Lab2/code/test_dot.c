@@ -93,7 +93,7 @@ double measure_cps()
   for(j=0; j<2; j++) {
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &cal_start);
     MCPS_RDTSC(tsc_start);
-    ilim = 100*1000*1000;
+    ilim = 50*1000*1000;
     for (i=0; i<ilim; i++)
       z = z * z + chaosC;
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &cal_end);
