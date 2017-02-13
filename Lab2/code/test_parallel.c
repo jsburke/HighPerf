@@ -421,18 +421,22 @@ void unroll_6(vec_ptr v, data_t *dest)
   long int length = get_vec_length(v);
   long int limit = length - 1;
   data_t *data = get_vec_start(v);
-  data_t acc = IDENT;
+  data_t acc0 = IDENT;
+  data_t acc1 = IDENT;
+  data_t acc2 = IDENT;
 
   /* Combine two elements at a time */
   for (i = 0; i < limit; i+=6) {
-    acc = (acc OP data[i]) OP data[i+1] OP data[i+2] OP data[i+3] OP data[i+4] OP data[i+5];
+    acc0 = acc0 OP (data[i] OP data[i+1]);
+    acc1 = acc1 OP (data[i+2] OP data[i+3]);
+    acc2 = acc2 OP (data[i+4] OP data[i+5]);
   }
 
   /* Finish remaining elements */
   for (; i < length; i++) {
-    acc = acc OP data[i];
+    acc0 = acc0 OP data[i];
   }
-  *dest = acc;
+  *dest = acc0 OP acc1 OP acc2;
 }
 
 void unroll_8(vec_ptr v, data_t *dest)
@@ -441,18 +445,24 @@ void unroll_8(vec_ptr v, data_t *dest)
   long int length = get_vec_length(v);
   long int limit = length - 1;
   data_t *data = get_vec_start(v);
-  data_t acc = IDENT;
+  data_t acc0 = IDENT;
+  data_t acc1 = IDENT;
+  data_t acc2 = IDENT;
+  data_t acc3 = IDENT;
 
   /* Combine two elements at a time */
-  for (i = 0; i < limit; i+=8) {
-    acc = (acc OP data[i]) OP data[i+1] OP data[i+2] OP data[i+3] OP data[i+4] OP data[i+5] OP data[i+6] OP data[i+7];
+  for (i = 0; i < limit; i+=6) {
+    acc0 = acc0 OP (data[i] OP data[i+1]);
+    acc1 = acc1 OP (data[i+2] OP data[i+3]);
+    acc2 = acc2 OP (data[i+4] OP data[i+5]);
+    acc3 = acc3 OP (data[i+6] OP data[i+7]);
   }
 
   /* Finish remaining elements */
   for (; i < length; i++) {
-    acc = acc OP data[i];
+    acc0 = acc0 OP data[i];
   }
-  *dest = acc;
+  *dest = acc0 OP acc1 OP acc2 OP acc3;
 }
 
 void unroll_10(vec_ptr v, data_t *dest)
@@ -461,16 +471,24 @@ void unroll_10(vec_ptr v, data_t *dest)
   long int length = get_vec_length(v);
   long int limit = length - 1;
   data_t *data = get_vec_start(v);
-  data_t acc = IDENT;
+  data_t acc0 = IDENT;
+  data_t acc1 = IDENT;
+  data_t acc2 = IDENT;
+  data_t acc3 = IDENT;
+  data_t acc4 = IDENT;
 
   /* Combine two elements at a time */
-  for (i = 0; i < limit; i+=10) {
-    acc = (acc OP data[i]) OP data[i+1] OP data[i+2] OP data[i+3] OP data[i+4] OP data[i+5] OP data[i+6] OP data[i+7] OP data[i+8] OP data[i+9];
+  for (i = 0; i < limit; i+=6) {
+    acc0 = acc0 OP (data[i] OP data[i+1]);
+    acc1 = acc1 OP (data[i+2] OP data[i+3]);
+    acc2 = acc2 OP (data[i+4] OP data[i+5]);
+    acc3 = acc3 OP (data[i+6] OP data[i+7]);
+    acc4 = acc4 OP (data[i+8] OP data[i+9]);
   }
 
   /* Finish remaining elements */
   for (; i < length; i++) {
-    acc = acc OP data[i];
+    acc0 = acc0 OP data[i];
   }
-  *dest = acc;
+  *dest = acc0 OP acc1 OP acc2 OP acc3 OP acc4;
 }
