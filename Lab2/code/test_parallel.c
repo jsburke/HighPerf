@@ -69,8 +69,8 @@ int main(int argc, char *argv[])
 
   if(argc != 4)
   {
-  	printf("num args wrong\n");
-  	return 0;
+    printf("num args wrong\n");
+    return 0;
   }
 
   BASE  = strtol(argv[1], NULL, 10);
@@ -79,14 +79,14 @@ int main(int argc, char *argv[])
 
   if(DELTA == 0)
   {
-  	printf("DELTA must be greater than zero\n");
-  	return 0;
+    printf("DELTA must be greater than zero\n");
+    return 0;
   }
 
   if(ITERS == 0)
   {
-  	printf("ITERS must be at least one\n");
-  	return 0;
+    printf("ITERS must be at least one\n");
+    return 0;
   }
 
   char filename[255] = {0};
@@ -183,7 +183,7 @@ int main(int argc, char *argv[])
     for (j = 0; j < OPTIONS; j++) {
       if (j != 0) fprintf(fp, ", ");
        fprintf(fp, "%ld", (long int)((double)(CPG)*(double)
-		 (GIG * time_stamp[j][i].tv_sec + time_stamp[j][i].tv_nsec)));
+     (GIG * time_stamp[j][i].tv_sec + time_stamp[j][i].tv_nsec)));
     }
     fprintf(fp, "\n");
   }
@@ -208,10 +208,10 @@ vec_ptr new_vec(long int len)
   if (len > 0) {
     data_t *data = (data_t *) calloc(len, sizeof(data_t));
     if (!data) {
-	  free((void *) result);
-	  return NULL;  /* Couldn't allocate storage */
-	}
-	result->data = data;
+    free((void *) result);
+    return NULL;  /* Couldn't allocate storage */
+  }
+  result->data = data;
   }
   else result->data = NULL;
 
