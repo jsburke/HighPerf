@@ -39,6 +39,7 @@ double basic_unroll(double a[], double x, int degree);
 double horner_inter(double a[], double x, int degree);
 
 
+
 /*****************************************************************************/
 int main(int argc, char *argv[])
 {
@@ -95,7 +96,6 @@ int main(int argc, char *argv[])
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
     time_stamp[OPTION][i] = ts_diff(time1,time2);
   }
-  printf("%lf\n", calc);
 
   OPTION++;
   for (i = 0; i < ITERS; i++) {
@@ -104,7 +104,6 @@ int main(int argc, char *argv[])
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
     time_stamp[OPTION][i] = ts_diff(time1,time2);
   }
-    printf("%lf\n", calc);
 
   OPTION++;
   for (i = 0; i < ITERS; i++) {
@@ -113,7 +112,6 @@ int main(int argc, char *argv[])
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
     time_stamp[OPTION][i] = ts_diff(time1,time2);
   }
-    printf("%lf\n", calc);
 
   OPTION++;
   for (i = 0; i < ITERS; i++) {
@@ -122,14 +120,13 @@ int main(int argc, char *argv[])
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
     time_stamp[OPTION][i] = ts_diff(time1,time2);
   }
-    printf("%lf\n", calc);
   
   ////////////////////////////////////////////////////
   //  Write to file
   ////////////////////////////////////////////////////
 
   fp = fopen(filename,"w");
-  fprintf(fp, "degree, basic, horner, simple unroll, horner Interleaved\n"); // kludge line one
+  fprintf(fp, "degree, basic, horner, unroll, horner Interleaved\n"); // kludge line one
 
   for (i = 0; i < ITERS; i++) {
     fprintf(fp, "%ld,  ", (i+1)*DEGREE); // i covers the degree
@@ -266,29 +263,31 @@ double horner_poly(double a[], double x, int degree)
 }
 
 // polynomial with simple unroll with careful shift on xpwr
-// expec nothing big
+// expect nothing big
+// think something is wrong
 double basic_unroll(double a[], double x, int degree)
 {
   long int i;
   double acc  = a[0];
   double xpwr = x;
+  double x_sq = x * x;
 
   for(i = 1; i <= degree; i += 2)
   {
     acc  += (a[i] + a[i+1] * x) * xpwr;
-    xpwr = xpwr * x;
+    xpwr = xpwr * x_sq;
   }
 
   for (; i <= degree; i++) // clean up
   {
     acc += a[i] * xpwr;
-    xpwr = xpwr * x;
+    //xpwr = xpwr * x;
   }
 
   return acc;
 }
 
-//try interleaving horner since it seems the most straightforward for it
+//try interleaving horner with unroll since it seems the most straightforward for it
 double horner_inter(double a[], double x, int degree)
 {
   long int i;
