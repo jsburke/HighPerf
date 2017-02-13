@@ -275,7 +275,7 @@ double estrin_poly(double a[], double x, int degree)
 {
   long int i;
   double acc  = a[0] + a[1] * x;
-  double x_sq;
+  double x_sq  = x * x;
   double x_acc = x * x;
 
   for(i = 2; i <= degree; i += 2)
@@ -287,7 +287,6 @@ double estrin_poly(double a[], double x, int degree)
   for (; i <= degree; i++) // clean up
   {
     acc += a[i] * x_acc;
-    //xpwr = xpwr * x;
   }
 
   return acc;
