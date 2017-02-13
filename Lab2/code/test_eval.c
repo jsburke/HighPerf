@@ -75,9 +75,9 @@ int main(int argc, char *argv[])
   long int i, j, k;
   long long int time_sec, time_ns;
 
-  double a[DEGREE];
+  double a[(DEGREE*ITERS)+1];
   // initialize a with something
-  for (i = 0; i < DEGREE ; i++) a[i] = i;
+  for (i = 0; i < (DEGREE*ITERS)+1 ; i++) a[i] = i;
 
   measure_cps();
 
@@ -86,47 +86,55 @@ int main(int argc, char *argv[])
   //  Begin unroll
   //
   ///////////////////////////////////////////////
-  double calc;
+  double calc = 0 ;
 
   OPTION = 0;
   for (i = 0; i < ITERS; i++) {
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
-    calc = basic_poly(a, X_VAL, (i+1)*DEGREE);
+    calc += basic_poly(a, X_VAL, (i+1)*DEGREE);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
+     // printf("%lf\n", calc);
     time_stamp[OPTION][i] = ts_diff(time1,time2);
   }
 
   OPTION++;
   for (i = 0; i < ITERS; i++) {
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
-    calc = horner_poly(a, X_VAL, (i+1)*DEGREE);
+    calc += horner_poly(a, X_VAL, (i+1)*DEGREE);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
+      //printf("%lf\n", calc);
     time_stamp[OPTION][i] = ts_diff(time1,time2);
   }
 
   OPTION++;
   for (i = 0; i < ITERS; i++) {
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
-    calc = estrin_poly(a, X_VAL, (i+1)*DEGREE);
+    calc += estrin_poly(a, X_VAL, (i+1)*DEGREE);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
+      //printf("%lf\n", calc);
     time_stamp[OPTION][i] = ts_diff(time1,time2);
   }
 
   OPTION++;
   for (i = 0; i < ITERS; i++) {
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
-    calc = horner_inter(a, X_VAL, (i+1)*DEGREE);
+    calc += horner_inter(a, X_VAL, (i+1)*DEGREE);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
+      //printf("%lf\n", calc);
     time_stamp[OPTION][i] = ts_diff(time1,time2);
   }
   
   OPTION++;
   for (i = 0; i < ITERS; i++) {
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
-    calc = horner_reassoc(a, X_VAL, (i+1)*DEGREE);
+    calc += horner_reassoc(a, X_VAL, (i+1)*DEGREE);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
+    //printf("%lf\n", calc);
     time_stamp[OPTION][i] = ts_diff(time1,time2);
-  }  
+  }
+
+  printf("%lf\n", calc);
+
   ////////////////////////////////////////////////////
   //  Write to file
   ////////////////////////////////////////////////////
@@ -206,7 +214,7 @@ double measure_cps()
   for(j=0; j<2; j++) {
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &cal_start);
     MCPS_RDTSC(tsc_start);
-    ilim = 100*1000*1000;
+    ilim = 50*1000*1000;
     for (i=0; i<ilim; i++)
       z = z * z + chaosC;
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &cal_end);
@@ -268,9 +276,9 @@ double horner_poly(double a[], double x, int degree)
   return result;
 }
 
-// polynomial with simple unroll with careful shift on xpwr
-// expect nothing big
-// think something is wrong
+// Esstrin's scheme
+// (C0 + C1 x) + (C2 + C3 x)x^2 ...
+// might have good potential for expanding
 double estrin_poly(double a[], double x, int degree)
 {
   long int i;
@@ -278,7 +286,7 @@ double estrin_poly(double a[], double x, int degree)
   double x_sq  = x * x;
   double x_acc = x * x;
 
-  for(i = 2; i <= degree; i += 2)
+  for(i = 2; i < degree; i += 2)
   {
     acc  += (a[i] + a[i+1] * x) * x_acc;
     x_acc *= x_sq;
@@ -299,7 +307,7 @@ double horner_inter(double a[], double x, int degree)
   long int i;
   double result = a[degree];
 
-  for(i = degree - 1; i >= 0; i-=2)
+  for(i = degree - 1; i > 0; i-=2)
   {
     result = a[i-1] + x * (a[i] + x * result);
   }
@@ -321,7 +329,7 @@ double horner_reassoc(double a[], double x, int degree)
   double result = a[degree];
   double t1, t2; //temps to try and break muls
 
-  for(i = degree - 1; i >= 0; i-=2)
+  for(i = degree - 1; i > 0; i-=2)
   {
     t1 = x_sq * result;
     t2 = x * a[i];
