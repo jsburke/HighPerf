@@ -311,6 +311,7 @@ double estrin_poly(double a[], double x, int degree)
 }
 
 //aggressive version of estrin
+// turned out to be just about as good
 double estrin_aggro(double a[], double x, int degree)
 {
   long int i;
@@ -376,4 +377,3 @@ double horner_reassoc(double a[], double x, int degree)
 
   return result;
 }
-
