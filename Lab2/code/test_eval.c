@@ -12,7 +12,7 @@
 #define CPG 2.9           // Cycles per GHz -- Adjust to your computer
 double CPS = 2.9e9;    // Cycles per second -- Will be recomputed at runtime
 
-#define OPTIONS 2
+#define OPTIONS 4
 #define IDENT 1.0
 #define OP *
 
@@ -35,6 +35,8 @@ double measure_cps(void);
 
 double basic_poly(double a[], double x, int degree);
 double horner_poly(double a[], double x, int degree);
+double basic_unroll(double a[], double x, int degree);
+double horner_inter(double a[], double x, int degree);
 
 
 /*****************************************************************************/
@@ -84,7 +86,7 @@ int main(int argc, char *argv[])
   //  Begin unroll
   //
   ///////////////////////////////////////////////
-  int calc;
+  double calc;
 
   OPTION = 0;
   for (i = 0; i < ITERS; i++) {
@@ -93,8 +95,7 @@ int main(int argc, char *argv[])
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
     time_stamp[OPTION][i] = ts_diff(time1,time2);
   }
-
-  printf("\n");
+  printf("%lf\n", calc);
 
   OPTION++;
   for (i = 0; i < ITERS; i++) {
@@ -103,13 +104,32 @@ int main(int argc, char *argv[])
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
     time_stamp[OPTION][i] = ts_diff(time1,time2);
   }
+    printf("%lf\n", calc);
+
+  OPTION++;
+  for (i = 0; i < ITERS; i++) {
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
+    calc = basic_unroll(a, X_VAL, (i+1)*DEGREE);
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
+    time_stamp[OPTION][i] = ts_diff(time1,time2);
+  }
+    printf("%lf\n", calc);
+
+  OPTION++;
+  for (i = 0; i < ITERS; i++) {
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
+    calc = horner_inter(a, X_VAL, (i+1)*DEGREE);
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
+    time_stamp[OPTION][i] = ts_diff(time1,time2);
+  }
+    printf("%lf\n", calc);
   
   ////////////////////////////////////////////////////
   //  Write to file
   ////////////////////////////////////////////////////
 
   fp = fopen(filename,"w");
-  fprintf(fp, "degree, basic, horner\n"); // kludge line one
+  fprintf(fp, "degree, basic, horner, simple unroll, horner Interleaved\n"); // kludge line one
 
   for (i = 0; i < ITERS; i++) {
     fprintf(fp, "%ld,  ", (i+1)*DEGREE); // i covers the degree
@@ -193,7 +213,7 @@ double measure_cps()
   total_time = ts_sec(ts_diff(cal_start, cal_end));
   total_cycles = (double)(tsc_end.int64-tsc_start.int64);
   CPS = total_cycles / total_time;
-  //printf("z == %f, CPS == %g\n", z, CPS);
+  printf("z == %f, CPS == %g\n", z, CPS);
 
   return CPS;
 }
@@ -226,7 +246,6 @@ double basic_poly(double a[], double x, int degree)
   {
     result += a[i] * xpwr;
     xpwr = x * xpwr;
-    printf("i = %ld, res = %lf\n", i, result);
   }
 
   return result;
@@ -239,6 +258,48 @@ double horner_poly(double a[], double x, int degree)
   double result = a[degree];
 
   for(i = degree - 1; i >= 0; i--)
+  {
+    result = a[i] + x*result;
+  }
+
+  return result;
+}
+
+// polynomial with simple unroll with careful shift on xpwr
+// expec nothing big
+double basic_unroll(double a[], double x, int degree)
+{
+  long int i;
+  double acc  = a[0];
+  double xpwr = x;
+
+  for(i = 1; i <= degree; i += 2)
+  {
+    acc  += (a[i] + a[i+1] * x) * xpwr;
+    xpwr = xpwr * x;
+  }
+
+  for (; i <= degree; i++) // clean up
+  {
+    acc += a[i] * xpwr;
+    xpwr = xpwr * x;
+  }
+
+  return acc;
+}
+
+//try interleaving horner since it seems the most straightforward for it
+double horner_inter(double a[], double x, int degree)
+{
+  long int i;
+  double result = a[degree];
+
+  for(i = degree - 1; i >= 0; i-=2)
+  {
+    result = a[i-1] + x * (a[i] + x * result);
+  }
+
+  for(; i >= 0; i--) // clean up my mess
   {
     result = a[i] + x*result;
   }
