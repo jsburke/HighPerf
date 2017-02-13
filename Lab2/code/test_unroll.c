@@ -167,12 +167,15 @@ int main(int argc, char *argv[])
   fp = fopen(filename,"w");
   fprintf(fp, "x-axis, unroll_02, unroll_03, unroll_06, unroll_08, unroll_10\n"); // kludge line one
 
+  long int elements;
+
   for (i = 0; i < ITERS; i++) {
-    fprintf(fp, "%ld,  ", BASE+(i+1)*DELTA);
+    elements = BASE+(i+1)*DELTA;
+    fprintf(fp, "%ld,  ", elements);
     for (j = 0; j < OPTIONS; j++) {
       if (j != 0) fprintf(fp, ", ");
-       fprintf(fp, "%ld", (long int)((double)(CPG)*(double)
-		 (GIG * time_stamp[j][i].tv_sec + time_stamp[j][i].tv_nsec)));
+       fprintf(fp, "%lf", ((double)(CPG)*(double)
+		 (GIG * time_stamp[j][i].tv_sec + time_stamp[j][i].tv_nsec)/elements));
     }
     fprintf(fp, "\n");
   }
