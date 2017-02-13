@@ -12,7 +12,7 @@
 #define CPG 2.9           // Cycles per GHz -- Adjust to your computer
 double CPS = 2.9e9;    // Cycles per second -- Will be recomputed at runtime
 
-#define OPTIONS 4
+#define OPTIONS 5
 #define IDENT 1.0
 #define OP *
 
@@ -35,10 +35,9 @@ double measure_cps(void);
 
 double basic_poly(double a[], double x, int degree);
 double horner_poly(double a[], double x, int degree);
-double basic_unroll(double a[], double x, int degree);
+double estrin_poly(double a[], double x, int degree);
 double horner_inter(double a[], double x, int degree);
-
-
+double horner_reassoc(double a[], double x, int degree);
 
 /*****************************************************************************/
 int main(int argc, char *argv[])
@@ -108,7 +107,7 @@ int main(int argc, char *argv[])
   OPTION++;
   for (i = 0; i < ITERS; i++) {
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
-    calc = basic_unroll(a, X_VAL, (i+1)*DEGREE);
+    calc = estrin_poly(a, X_VAL, (i+1)*DEGREE);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
     time_stamp[OPTION][i] = ts_diff(time1,time2);
   }
@@ -121,12 +120,19 @@ int main(int argc, char *argv[])
     time_stamp[OPTION][i] = ts_diff(time1,time2);
   }
   
+  OPTION++;
+  for (i = 0; i < ITERS; i++) {
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
+    calc = horner_reassoc(a, X_VAL, (i+1)*DEGREE);
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
+    time_stamp[OPTION][i] = ts_diff(time1,time2);
+  }  
   ////////////////////////////////////////////////////
   //  Write to file
   ////////////////////////////////////////////////////
 
   fp = fopen(filename,"w");
-  fprintf(fp, "degree, basic, horner, unroll, horner Interleaved\n"); // kludge line one
+  fprintf(fp, "degree, basic, horner, estrin, horner Interleaved, horner reassoc\n"); // kludge line one
 
   for (i = 0; i < ITERS; i++) {
     fprintf(fp, "%ld,  ", (i+1)*DEGREE); // i covers the degree
@@ -265,22 +271,22 @@ double horner_poly(double a[], double x, int degree)
 // polynomial with simple unroll with careful shift on xpwr
 // expect nothing big
 // think something is wrong
-double basic_unroll(double a[], double x, int degree)
+double estrin_poly(double a[], double x, int degree)
 {
   long int i;
-  double acc  = a[0];
-  double xpwr = x;
-  double x_sq = x * x;
+  double acc  = a[0] + a[1] * x;
+  double x_sq;
+  double x_acc = x * x;
 
-  for(i = 1; i <= degree; i += 2)
+  for(i = 2; i <= degree; i += 2)
   {
-    acc  += (a[i] + a[i+1] * x) * xpwr;
-    xpwr = xpwr * x_sq;
+    acc  += (a[i] + a[i+1] * x) * x_acc;
+    x_acc *= x_sq;
   }
 
   for (; i <= degree; i++) // clean up
   {
-    acc += a[i] * xpwr;
+    acc += a[i] * x_acc;
     //xpwr = xpwr * x;
   }
 
@@ -288,6 +294,7 @@ double basic_unroll(double a[], double x, int degree)
 }
 
 //try interleaving horner with unroll since it seems the most straightforward for it
+// seems to have sligh boost
 double horner_inter(double a[], double x, int degree)
 {
   long int i;
@@ -305,3 +312,28 @@ double horner_inter(double a[], double x, int degree)
 
   return result;
 }
+
+// try manipulating multiplier
+//not powerful...
+double horner_reassoc(double a[], double x, int degree)
+{
+  long int i;
+  double x_sq   = x * x;
+  double result = a[degree];
+  double t1, t2; //temps to try and break muls
+
+  for(i = degree - 1; i >= 0; i-=2)
+  {
+    t1 = x_sq * result;
+    t2 = x * a[i];
+    result = a[i-1] + t1 + t2;
+  }
+
+  for(; i >= 0; i--) // clean up my mess
+  {
+    result = a[i] + x*result;
+  }
+
+  return result;
+}
+
