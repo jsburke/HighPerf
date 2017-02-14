@@ -77,6 +77,7 @@ int main(int argc, char *argv[])
   long long int time_sec, time_ns;
 
   double a[(DEGREE*ITERS)+1];
+  int elements = 0;
   // initialize a with something
   for (i = 0; i < (DEGREE*ITERS)+1 ; i++) a[i] = i;
 
@@ -91,6 +92,7 @@ int main(int argc, char *argv[])
 
   OPTION = 0;
   for (i = 0; i < ITERS; i++) {
+    elements += (i+1) * DEGREE;
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
     calc += basic_poly(a, X_VAL, (i+1)*DEGREE);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
@@ -156,8 +158,8 @@ int main(int argc, char *argv[])
     fprintf(fp, "%ld,  ", (i+1)*DEGREE); // i covers the degree
     for (j = 0; j < OPTIONS; j++) {
       if (j != 0) fprintf(fp, ", ");
-       fprintf(fp, "%ld", (long int)((double)(CPG)*(double)
-		 (GIG * time_stamp[j][i].tv_sec + time_stamp[j][i].tv_nsec)));
+       fprintf(fp, "%lf", ((double)(CPG)*(double)
+		 (GIG * time_stamp[j][i].tv_sec + time_stamp[j][i].tv_nsec)/elements));
     }
     fprintf(fp, "\n");
   }
