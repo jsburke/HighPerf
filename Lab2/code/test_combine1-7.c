@@ -22,9 +22,9 @@
 #define IDENT 1.0
 #define OP +
 
-#define FILE_PREFIX ((const unsigned char*) "intAddC7_")
+#define FILE_PREFIX ((const unsigned char*) "floatAddC7_")
 
-typedef int data_t;
+typedef float data_t;
 
 /* Create abstract data type for vector */
 typedef struct {
