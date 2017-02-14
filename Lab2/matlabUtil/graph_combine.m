@@ -6,9 +6,6 @@ data = csvread(file,1,0);
 fid = fopen(file);
 legend_names = strsplit(fgetl(fid),',');
 legend_names = legend_names(2:end);
-if length(legend_names(end)) == 1
-   legend_names = legend_names(1:end-1); %trim trailing crap 
-end
 fclose(fid);
 
 figure; hold on;
@@ -20,7 +17,6 @@ markers = [' ','o','+','s','*','x'];   % line markers for plots
 color_index  = 1;
 color_len = length(colors);
 markers_index = 1;
-
 x_axis = data(:,1);               %get x values to plot against
 num_cols = size(data,2);          %get number of y value columns
 for i = 2:num_cols
