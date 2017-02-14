@@ -13,6 +13,8 @@
 // #define DELTA 10
 // #define BASE 0
 
+#define ITER_VECLEN(i) (BASE+((i)+1)*DELTA)
+
 #define GIG 1000000000
 #define CPG 2.9           // Cycles per GHz -- Adjust to your computer
 
@@ -129,7 +131,7 @@ void combine7(vec_ptr v, data_t *dest);
 /*****************************************************************************/
 int main(int argc, char *argv[])
 {
-
+  long int * elements;
   int BASE, DELTA, ITERS;
 
   if(argc != 4)
@@ -141,6 +143,7 @@ int main(int argc, char *argv[])
   BASE  = strtol(argv[1], NULL, 10);
   DELTA = strtol(argv[2], NULL, 10);
   ITERS = strtol(argv[3], NULL, 10);
+  elements = (long int *) malloc(sizeof(long int) * (ITERS+1));
 
   if(DELTA == 0)
   {
@@ -173,7 +176,7 @@ int main(int argc, char *argv[])
   
   long int i, j, k;
   long long int time_sec, time_ns;
-  long int MAXSIZE = BASE+(ITERS+1)*DELTA;
+  long int MAXSIZE = ITER_VECLEN(ITERS);
 
   measure_cps();
 
@@ -187,7 +190,8 @@ int main(int argc, char *argv[])
   // execute and time all 7 options from B&O 
   OPTION = 0;
   for (i = 0; i < ITERS; i++) {
-    set_vec_length(v0,BASE+(i+1)*DELTA);
+    elements[i] = ITER_VECLEN(i);
+    set_vec_length(v0,elements[i]);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
     combine1(v0, data_holder);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
@@ -258,11 +262,12 @@ int main(int argc, char *argv[])
   fprintf(fp, "\n");
 
   for (i = 0; i < ITERS; i++) {
+    double cycles;
     fprintf(fp, "%ld,  ", BASE+(i+1)*DELTA);
     for (j = 0; j < OPTIONS; j++) {
       if (j != 0) fprintf(fp, ", ");
-       fprintf(fp, "%ld", (long int)((double)(CPG)*(double)
-		 (GIG * time_stamp[j][i].tv_sec + time_stamp[j][i].tv_nsec)));
+      cycles = CPS * ts_sec(time_stamp[j][i]);
+      fprintf(fp, "%f", cycles / elements[i]);
     }
     fprintf(fp, "\n");
   }
