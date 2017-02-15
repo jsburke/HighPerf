@@ -3,3 +3,5 @@ test_combine1-7
 tbr
 tcmb
 *.s
+p2_data/*
+p3_data/*

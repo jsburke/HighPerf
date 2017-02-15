@@ -41,8 +41,6 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
-# frequent output files
-*.csv
 # Emacs editor backup files
 *~
 # directory for temps
