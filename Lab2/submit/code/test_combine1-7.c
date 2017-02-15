@@ -13,6 +13,8 @@
 // #define DELTA 10
 // #define BASE 0
 
+#define ITER_VECLEN(i) (BASE+((i)+1)*DELTA)
+
 #define GIG 1000000000
 #define CPG 2.9           // Cycles per GHz -- Adjust to your computer
 
@@ -20,9 +22,9 @@
 #define IDENT 1.0
 #define OP +
 
-#define FILE_PREFIX ((const unsigned char*) "intAddC7_")
+#define FILE_PREFIX ((const unsigned char*) "floatAddC7_")
 
-typedef int data_t;
+typedef float data_t;
 
 /* Create abstract data type for vector */
 typedef struct {
@@ -129,7 +131,7 @@ void combine7(vec_ptr v, data_t *dest);
 /*****************************************************************************/
 int main(int argc, char *argv[])
 {
-
+  long int * elements;
   int BASE, DELTA, ITERS;
 
   if(argc != 4)
@@ -141,6 +143,7 @@ int main(int argc, char *argv[])
   BASE  = strtol(argv[1], NULL, 10);
   DELTA = strtol(argv[2], NULL, 10);
   ITERS = strtol(argv[3], NULL, 10);
+  elements = (long int *) malloc(sizeof(long int) * (ITERS+1));
 
   if(DELTA == 0)
   {
@@ -173,7 +176,7 @@ int main(int argc, char *argv[])
   
   long int i, j, k;
   long long int time_sec, time_ns;
-  long int MAXSIZE = BASE+(ITERS+1)*DELTA;
+  long int MAXSIZE = ITER_VECLEN(ITERS);
 
   measure_cps();
 
@@ -187,11 +190,12 @@ int main(int argc, char *argv[])
   // execute and time all 7 options from B&O 
   OPTION = 0;
   for (i = 0; i < ITERS; i++) {
-    set_vec_length(v0,BASE+(i+1)*DELTA);
+    elements[i] = ITER_VECLEN(i);
+    set_vec_length(v0,elements[i]);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
     combine1(v0, data_holder);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
-    time_stamp[OPTION][i] = ts_diff(time1,time2);
+    time_stamp[OPTION][i] = diff(time1,time2);
   }
 
   OPTION++;
@@ -200,7 +204,7 @@ int main(int argc, char *argv[])
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
     combine2(v0, data_holder);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
-    time_stamp[OPTION][i] = ts_diff(time1,time2);
+    time_stamp[OPTION][i] = diff(time1,time2);
   }
 
   OPTION++;
@@ -209,7 +213,7 @@ int main(int argc, char *argv[])
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
     combine3(v0, data_holder);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
-    time_stamp[OPTION][i] = ts_diff(time1,time2);
+    time_stamp[OPTION][i] = diff(time1,time2);
   }
 
   OPTION++;
@@ -218,7 +222,7 @@ int main(int argc, char *argv[])
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
     combine4(v0, data_holder);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
-    time_stamp[OPTION][i] = ts_diff(time1,time2);
+    time_stamp[OPTION][i] = diff(time1,time2);
   }
 
   OPTION++;
@@ -227,7 +231,7 @@ int main(int argc, char *argv[])
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
     combine5(v0, data_holder);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
-    time_stamp[OPTION][i] = ts_diff(time1,time2);
+    time_stamp[OPTION][i] = diff(time1,time2);
   }
 
   OPTION++;
@@ -236,7 +240,7 @@ int main(int argc, char *argv[])
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
     combine6(v0, data_holder);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
-    time_stamp[OPTION][i] = ts_diff(time1,time2);
+    time_stamp[OPTION][i] = diff(time1,time2);
   }
 
   OPTION++;
@@ -245,7 +249,7 @@ int main(int argc, char *argv[])
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
     combine7(v0, data_holder);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
-    time_stamp[OPTION][i] = ts_diff(time1,time2);
+    time_stamp[OPTION][i] = diff(time1,time2);
   }
   
   fp = fopen(filename,"w");
@@ -258,11 +262,12 @@ int main(int argc, char *argv[])
   fprintf(fp, "\n");
 
   for (i = 0; i < ITERS; i++) {
+    double cycles;
     fprintf(fp, "%ld,  ", BASE+(i+1)*DELTA);
     for (j = 0; j < OPTIONS; j++) {
       if (j != 0) fprintf(fp, ", ");
-       fprintf(fp, "%ld", (long int)((double)(CPG)*(double)
-		 (GIG * time_stamp[j][i].tv_sec + time_stamp[j][i].tv_nsec)));
+      cycles = CPS * ts_sec(time_stamp[j][i]);
+      fprintf(fp, "%f", cycles / elements[i]);
     }
     fprintf(fp, "\n");
   }

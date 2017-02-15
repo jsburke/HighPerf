@@ -8,28 +8,15 @@
 #include <time.h>
 #include <math.h>
 
-#define SIZE 10000000
-// #define ITERS 20
-// #define DELTA 10
-// #define BASE 0
-
 #define GIG 1000000000
 #define CPG 2.9           // Cycles per GHz -- Adjust to your computer
 double CPS = 2.9e9;    // Cycles per second -- Will be recomputed at runtime
 
-#define OPTIONS 5
+#define OPTIONS 6
 #define IDENT 1.0
 #define OP *
 
-#define FILE_PREFIX ((const unsigned char*) "unroll_")
-
-typedef double data_t;
-
-/* Create abstract data type for vector */
-typedef struct {
-  long int len;
-  data_t *data;
-} vec_rec, *vec_ptr;
+#define FILE_PREFIX ((const unsigned char*) "polynomial_")
 
 //rdtsc related
 typedef union {
@@ -40,30 +27,24 @@ typedef union {
 #define MCPS_RDTSC(cpu_c) __asm__ __volatile__ ("rdtsc" : \
                      "=a" ((cpu_c).int32.lo), "=d"((cpu_c).int32.hi))
 
-vec_ptr new_vec(long int len);
-int get_vec_element(vec_ptr v, long int index, data_t *dest);
-long int get_vec_length(vec_ptr v);
-int set_vec_length(vec_ptr v, long int index);
-int init_vector(vec_ptr v, long int len);
-data_t* get_vec_start(vec_ptr v);
-
 int clock_gettime(clockid_t clk_id, struct timespec *tp);
 struct timespec diff(struct timespec start, struct timespec end);
 double ts_sec(struct timespec ts);
 struct timespec ts_diff(struct timespec start, struct timespec end);
 double measure_cps(void);
 
-void unroll_2(vec_ptr v, data_t *dest);
-void unroll_3(vec_ptr v, data_t *dest);
-void unroll_6(vec_ptr v, data_t *dest);
-void unroll_8(vec_ptr v, data_t *dest);
-void unroll_10(vec_ptr v, data_t *dest);
+double basic_poly(double a[], double x, int degree);
+double horner_poly(double a[], double x, int degree);
+double estrin_poly(double a[], double x, int degree);
+double estrin_aggro(double a[], double x, int degree);
+double horner_inter(double a[], double x, int degree);
+double horner_reassoc(double a[], double x, int degree);
 
 /*****************************************************************************/
 int main(int argc, char *argv[])
 {
   
-  int BASE, DELTA, ITERS;
+  int DEGREE, ITERS, X_VAL;
 
   if(argc != 4)
   {
@@ -71,107 +52,110 @@ int main(int argc, char *argv[])
   	return 0;
   }
 
-  BASE  = strtol(argv[1], NULL, 10);
-  DELTA = strtol(argv[2], NULL, 10);
-  ITERS = strtol(argv[3], NULL, 10);
+  DEGREE  = strtol(argv[1], NULL, 10);
+  ITERS   = strtol(argv[2], NULL, 10);
+  X_VAL   = strtol(argv[3], NULL, 10);
 
-  if(DELTA == 0)
+  if(DEGREE == 0)
   {
-  	printf("DELTA must be greater than zero\n");
-  	return 0;
-  }
-
-  if(ITERS == 0)
-  {
-  	printf("ITERS must be at least one\n");
+  	printf("DEGREE must be greater than zero\n");
   	return 0;
   }
 
   char filename[255] = {0};
   FILE *fp;
 
-  sprintf(filename, "%sB%d_D%d_I%d.csv", FILE_PREFIX, BASE, DELTA, ITERS);
+  sprintf(filename, "%sD%d_I%d_X%d.csv", FILE_PREFIX, DEGREE, ITERS, X_VAL);
   printf("Current File: %s\n", filename);
 
   int OPTION;
 
   struct timespec time1, time2;
-  struct timespec time_stamp[OPTIONS][ITERS+1];
-  data_t *data_holder;
+  struct timespec time_stamp[OPTIONS][ITERS];
   
   long int i, j, k;
   long long int time_sec, time_ns;
-  long int MAXSIZE = BASE+(ITERS+1)*DELTA;
+
+  double a[(DEGREE*ITERS)+1];
+  int elements = 0;
+  // initialize a with something
+  for (i = 0; i < (DEGREE*ITERS)+1 ; i++) a[i] = i;
 
   measure_cps();
-
-  // declare and initialize the vector structure
-  vec_ptr v0 = new_vec(MAXSIZE);
-  data_holder = (data_t *) malloc(sizeof(data_t));
-  init_vector(v0, MAXSIZE);
 
   ///////////////////////////////////////////////
   //
   //  Begin unroll
   //
   ///////////////////////////////////////////////
+  double calc = 0 ;
+
   OPTION = 0;
   for (i = 0; i < ITERS; i++) {
-    set_vec_length(v0,BASE+(i+1)*DELTA);
+    elements += (i+1) * DEGREE;
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
-    unroll_2(v0, data_holder);
+    calc += basic_poly(a, X_VAL, (i+1)*DEGREE);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
+    //printf("%lf\n", calc);
     time_stamp[OPTION][i] = ts_diff(time1,time2);
   }
 
   OPTION++;
   for (i = 0; i < ITERS; i++) {
-    set_vec_length(v0,BASE+(i+1)*DELTA);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
-    unroll_3(v0, data_holder);
+    calc += horner_poly(a, X_VAL, (i+1)*DEGREE);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
+    //printf("%lf\n", calc);
+    time_stamp[OPTION][i] = ts_diff(time1,time2);
+  }
+
+  OPTION++;
+  for (i = 0; i < ITERS; i++) {
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
+    calc += estrin_poly(a, X_VAL, (i+1)*DEGREE);
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
+    //printf("%lf\n", calc);
+    time_stamp[OPTION][i] = ts_diff(time1,time2);
+  }
+
+  OPTION++;
+  for (i = 0; i < ITERS; i++) {
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
+    calc += horner_inter(a, X_VAL, (i+1)*DEGREE);
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
+    //printf("%lf\n", calc);
     time_stamp[OPTION][i] = ts_diff(time1,time2);
   }
   
   OPTION++;
   for (i = 0; i < ITERS; i++) {
-    set_vec_length(v0,BASE+(i+1)*DELTA);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
-    unroll_6(v0, data_holder);
+    calc += horner_reassoc(a, X_VAL, (i+1)*DEGREE);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
+    //printf("%lf\n", calc);
     time_stamp[OPTION][i] = ts_diff(time1,time2);
   }
 
   OPTION++;
   for (i = 0; i < ITERS; i++) {
-    set_vec_length(v0,BASE+(i+1)*DELTA);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
-    unroll_8(v0, data_holder);
+    calc += estrin_aggro(a, X_VAL, (i+1)*DEGREE);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
+    //printf("%lf\n", calc);
     time_stamp[OPTION][i] = ts_diff(time1,time2);
   }
 
-  OPTION++;
-  for (i = 0; i < ITERS; i++) {
-    set_vec_length(v0,BASE+(i+1)*DELTA);
-    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
-    unroll_10(v0, data_holder);
-    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
-    time_stamp[OPTION][i] = ts_diff(time1,time2);
-  }
-  
+  printf("%lf\n", calc);
+
   ////////////////////////////////////////////////////
   //  Write to file
   ////////////////////////////////////////////////////
 
   fp = fopen(filename,"w");
-  fprintf(fp, "x-axis, unroll_02, unroll_03, unroll_06, unroll_08, unroll_10\n"); // kludge line one
-
-  long int elements;
+  fprintf(fp, "degree, basic, horner, estrin, horner Interleaved, horner reassoc, estrin aggro\n"); // kludge line one
 
   for (i = 0; i < ITERS; i++) {
-    elements = BASE+(i+1)*DELTA;
-    fprintf(fp, "%ld,  ", elements);
+    fprintf(fp, "%ld,  ", (i+1)*DEGREE); // i covers the degree
     for (j = 0; j < OPTIONS; j++) {
       if (j != 0) fprintf(fp, ", ");
        fprintf(fp, "%lf", ((double)(CPG)*(double)
@@ -185,71 +169,6 @@ int main(int argc, char *argv[])
   
 }/* end main */
 
-/**********************************************/
-/* Create vector of specified length */
-vec_ptr new_vec(long int len)
-{
-  long int i;
-
-  /* Allocate and declare header structure */
-  vec_ptr result = (vec_ptr) malloc(sizeof(vec_rec));
-  if (!result) return NULL;  /* Couldn't allocate storage */
-  result->len = len;
-
-  /* Allocate and declare array */
-  if (len > 0) {
-    data_t *data = (data_t *) calloc(len, sizeof(data_t));
-    if (!data) {
-	  free((void *) result);
-	  return NULL;  /* Couldn't allocate storage */
-	}
-	result->data = data;
-  }
-  else result->data = NULL;
-
-  return result;
-}
-
-/* Retrieve vector element and store at dest.
-   Return 0 (out of bounds) or 1 (successful)
-*/
-int get_vec_element(vec_ptr v, long int index, data_t *dest)
-{
-  if (index < 0 || index >= v->len) return 0;
-  *dest = v->data[index];
-  return 1;
-}
-
-/* Return length of vector */
-long int get_vec_length(vec_ptr v)
-{
-  return v->len;
-}
-
-/* Set length of vector */
-int set_vec_length(vec_ptr v, long int index)
-{
-  v->len = index;
-  return 1;
-}
-
-/* initialize vector */
-int init_vector(vec_ptr v, long int len)
-{
-  long int i;
-
-  if (len > 0) {
-    v->len = len;
-    for (i = 0; i < len; i++) v->data[i] = (data_t)(i);
-    return 1;
-  }
-  else return 0;
-}
-
-data_t *get_vec_start(vec_ptr v)
-{
-  return v->data;
-}
 
 /*************************************************/
 double ts_sec(struct timespec ts)
@@ -307,7 +226,7 @@ double measure_cps()
   for(j=0; j<2; j++) {
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &cal_start);
     MCPS_RDTSC(tsc_start);
-    ilim = 100*1000*1000;
+    ilim = 50*1000*1000;
     for (i=0; i<ilim; i++)
       z = z * z + chaosC;
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &cal_end);
@@ -317,7 +236,7 @@ double measure_cps()
   total_time = ts_sec(ts_diff(cal_start, cal_end));
   total_cycles = (double)(tsc_end.int64-tsc_start.int64);
   CPS = total_cycles / total_time;
-  //printf("z == %f, CPS == %g\n", z, CPS);
+  printf("z == %f, CPS == %g\n", z, CPS);
 
   return CPS;
 }
@@ -340,105 +259,123 @@ struct timespec diff(struct timespec start, struct timespec end)
 
 /*************************************************/
 
-
-
-/* Example of --> Loop unrolling */
-void unroll_2(vec_ptr v, data_t *dest)
+double basic_poly(double a[], double x, int degree)
 {
   long int i;
-  long int length = get_vec_length(v);
-  long int limit = length - 1;
-  data_t *data = get_vec_start(v);
-  data_t acc = IDENT;
+  double result = a[0];
+  double xpwr   = x;
 
-  /* Combine two elements at a time */
-  for (i = 0; i < limit; i+=2) {
-    acc = (acc OP data[i]) OP data[i+1];
+  for(i = 1; i <= degree; i++)
+  {
+    result += a[i] * xpwr;
+    xpwr = x * xpwr;
   }
 
-  /* Finish remaining elements */
-  for (; i < length; i++) {
-    acc = acc OP data[i];
-  }
-  *dest = acc;
+  return result;
 }
 
-void unroll_3(vec_ptr v, data_t *dest)
+
+double horner_poly(double a[], double x, int degree)
 {
   long int i;
-  long int length = get_vec_length(v);
-  long int limit = length - 1;
-  data_t *data = get_vec_start(v);
-  data_t acc = IDENT;
+  double result = a[degree];
 
-  /* Combine two elements at a time */
-  for (i = 0; i < limit; i+=3) {
-    acc = (acc OP data[i]) OP data[i+1] OP data[i+2];
+  for(i = degree - 1; i >= 0; i--)
+  {
+    result = a[i] + x*result;
   }
 
-  /* Finish remaining elements */
-  for (; i < length; i++) {
-    acc = acc OP data[i];
-  }
-  *dest = acc;
+  return result;
 }
 
-void unroll_6(vec_ptr v, data_t *dest)
+// Esstrin's scheme
+// (C0 + C1 x) + (C2 + C3 x)x^2 ...
+// might have good potential for expanding
+double estrin_poly(double a[], double x, int degree)
 {
   long int i;
-  long int length = get_vec_length(v);
-  long int limit = length - 1;
-  data_t *data = get_vec_start(v);
-  data_t acc = IDENT;
+  double acc  = a[0] + a[1] * x;
+  double x_sq  = x * x;
+  double x_acc = x * x;
 
-  /* Combine two elements at a time */
-  for (i = 0; i < limit; i+=6) {
-    acc = (acc OP data[i]) OP data[i+1] OP data[i+2] OP data[i+3] OP data[i+4] OP data[i+5];
+  for(i = 2; i < degree; i += 2)
+  {
+    acc  += (a[i] + a[i+1] * x) * x_acc;
+    x_acc *= x_sq;
   }
 
-  /* Finish remaining elements */
-  for (; i < length; i++) {
-    acc = acc OP data[i];
+  for (; i <= degree; i++) // clean up
+  {
+    acc += a[i] * x_acc;
   }
-  *dest = acc;
+
+  return acc;
 }
 
-void unroll_8(vec_ptr v, data_t *dest)
+//aggressive version of estrin
+// turned out to be just about as good
+double estrin_aggro(double a[], double x, int degree)
 {
   long int i;
-  long int length = get_vec_length(v);
-  long int limit = length - 1;
-  data_t *data = get_vec_start(v);
-  data_t acc = IDENT;
+  double x_sq  = x * x;
+  double acc  = a[0] + a[1] * x + a[2] * x_sq; 
+  double x_acc = x_sq * x;
+  double x_tr  = x_acc;
 
-  /* Combine two elements at a time */
-  for (i = 0; i < limit; i+=8) {
-    acc = (acc OP data[i]) OP data[i+1] OP data[i+2] OP data[i+3] OP data[i+4] OP data[i+5] OP data[i+6] OP data[i+7];
+  for(i = 3; i < degree; i += 3)
+  {
+    acc  += (a[i] + a[i+1] * x + a [i+2] * x_sq) * x_acc;
+    x_acc *= x_tr;
   }
 
-  /* Finish remaining elements */
-  for (; i < length; i++) {
-    acc = acc OP data[i];
+  for (; i <= degree; i++) // clean up
+  {
+    acc += a[i] * x_acc;
   }
-  *dest = acc;
+
+  return acc;
 }
 
-void unroll_10(vec_ptr v, data_t *dest)
+//try interleaving horner with unroll since it seems the most straightforward for it
+// seems to have sligh boost
+double horner_inter(double a[], double x, int degree)
 {
   long int i;
-  long int length = get_vec_length(v);
-  long int limit = length - 1;
-  data_t *data = get_vec_start(v);
-  data_t acc = IDENT;
+  double result = a[degree];
 
-  /* Combine two elements at a time */
-  for (i = 0; i < limit; i+=10) {
-    acc = (acc OP data[i]) OP data[i+1] OP data[i+2] OP data[i+3] OP data[i+4] OP data[i+5] OP data[i+6] OP data[i+7] OP data[i+8] OP data[i+9];
+  for(i = degree - 1; i > 0; i-=2)
+  {
+    result = a[i-1] + x * (a[i] + x * result);
   }
 
-  /* Finish remaining elements */
-  for (; i < length; i++) {
-    acc = acc OP data[i];
+  for(; i >= 0; i--) // clean up my mess
+  {
+    result = a[i] + x*result;
   }
-  *dest = acc;
+
+  return result;
+}
+
+// try manipulating multiplier
+//not powerful...
+double horner_reassoc(double a[], double x, int degree)
+{
+  long int i;
+  double x_sq   = x * x;
+  double result = a[degree];
+  double t1, t2; //temps to try and break muls
+
+  for(i = degree - 1; i > 0; i-=2)
+  {
+    t1 = x_sq * result;
+    t2 = x * a[i];
+    result = a[i-1] + t1 + t2;
+  }
+
+  for(; i >= 0; i--) // clean up my mess
+  {
+    result = a[i] + x*result;
+  }
+
+  return result;
 }
