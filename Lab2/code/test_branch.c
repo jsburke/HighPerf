@@ -165,7 +165,7 @@ int main(int argc, char *argv[])
     set_vec_length(vlin, ITER_VECLEN(i));
     set_vec_length(v_out,ITER_VECLEN(i));
     elements[i] = ITER_VECLEN(i);
-
+    // printf("elements[%d] == %d\n", i, elements[i]);
     OPTION = 0;
 
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
@@ -250,7 +250,7 @@ int main(int argc, char *argv[])
     fprintf(fp, "%ld", ((long int) ITER_VECLEN(i)));
     for(opt=0; opt<OPTIONS; opt++) {
       cycles = CPS * ts_sec(time_stamp[opt][i]);
-      fprintf(fp, ", %f", cycles / elements[opt]);
+      fprintf(fp, ", %f", cycles / elements[i]);
     }
     fprintf(fp, "\n");
   }

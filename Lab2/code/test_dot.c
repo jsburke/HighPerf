@@ -132,8 +132,9 @@ data_t *get_vec_start(vec_ptr v);
 double dotprod1(vec_ptr a, vec_ptr b);
 double dotprod2(vec_ptr a, vec_ptr b);
 double dotprod3(vec_ptr a, vec_ptr b);
+double dotprod3b(vec_ptr a, vec_ptr b);
 double dotprod4(vec_ptr a, vec_ptr b);
-#define METHODS 4
+#define METHODS 5
 
 
 /*****************************************************************************/
@@ -178,9 +179,14 @@ int main(int argc, char *argv[])
     time_stamp[i][2] = ts_diff(time1,time2);
 
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
-    grand_total += dotprod4(v0, v1);
+    grand_total += dotprod3b(v0, v1);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
     time_stamp[i][3] = ts_diff(time1,time2);
+
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
+    grand_total += dotprod4(v0, v1);
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
+    time_stamp[i][4] = ts_diff(time1,time2);
   }
   printf("All tests done; grand total = %g\n", grand_total);
 
@@ -194,23 +200,15 @@ int main(int argc, char *argv[])
   /* output times */
   fprintf(fp, "Vector Size, ");
   fprintf(fp, "Simple Loop, Unrolled 2x, ");
-  fprintf(fp, "Two Accumulators, 2x Associativity, ");
+  fprintf(fp, "Two Accumulators, Four accumulators, 2x Associativity, ");
   fprintf(fp, "\n");
   for (i = 0; i < ITERS; i++) {
     double cycles;
     fprintf(fp, "%ld", elements[i]);
-
-    cycles = CPS * ts_sec(time_stamp[i][0]);
-    fprintf(fp, ", %f", cycles / elements[i]);
-
-    cycles = CPS * ts_sec(time_stamp[i][1]);
-    fprintf(fp, ", %f", cycles / elements[i]);
-
-    cycles = CPS * ts_sec(time_stamp[i][2]);
-    fprintf(fp, ", %f", cycles / elements[i]);
-
-    cycles = CPS * ts_sec(time_stamp[i][3]);
-    fprintf(fp, ", %f", cycles / elements[i]);
+    for(j=0; j<METHODS; j++) {
+      cycles = CPS * ts_sec(time_stamp[i][j]);
+      fprintf(fp, ", %f", cycles / elements[i]);
+    }
 
     fprintf(fp, "\n");
   }
@@ -343,6 +341,33 @@ double dotprod3(vec_ptr a, vec_ptr b)
     }
   }
   return acc0 + acc1;
+}
+
+/* Unrolling didn't help; let's try interleaving nondependent computations. */
+double dotprod3b(vec_ptr a, vec_ptr b)
+{
+  long int i;
+  long int alen = get_vec_length(a);
+  long int blen = get_vec_length(b);
+  data_t *adata = get_vec_start(a);
+  data_t *bdata = get_vec_start(b);
+
+  data_t acc0 = 0;
+  data_t acc1 = 0;
+  data_t acc2 = 0;
+  data_t acc3 = 0;
+  if (alen == blen) {
+    for (i = 0; i < alen; i+=4) {
+      acc0 = acc0 + (adata[i] * bdata[i]);
+      acc1 = acc1 + (adata[i+1] * bdata[i+1]);
+      acc2 = acc2 + (adata[i+2] * bdata[i+2]);
+      acc3 = acc3 + (adata[i+3] * bdata[i+3]);
+    }
+    while (i < alen) {
+      acc0 = acc0 + (adata[i] * bdata[i]);
+    }
+  }
+  return acc0 + acc1 + acc2 + acc3;
 }
 
 /* Interleaving but with only one accumulator */
