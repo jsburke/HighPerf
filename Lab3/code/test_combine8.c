@@ -23,7 +23,7 @@ double CPS = 2.9e9;    // Cycles per second -- Will be recomputed at runtime
 // #define DELTA 32
 // #define BASE 0
 
-#define OPTIONS 4       // NEED TO MODIFY
+#define OPTIONS 5       // NEED TO MODIFY
 #define IDENT 1.0
 #define OP +
 
@@ -78,6 +78,7 @@ void combine4(vec_ptr v, data_t *dest);
 void combine6_5(vec_ptr v, data_t *dest);
 void combine8(vec_ptr v, data_t *dest);
 void combine8_4(vec_ptr v, data_t *dest);
+void combine8_2(vec_ptr v, data_t *dest);
 
 /*****************************************************************************/
 int main(int argc, char *argv[])
@@ -171,6 +172,15 @@ int main(int argc, char *argv[])
     time_stamp[OPTION][i] = ts_diff(time1,time2);
   }
 
+    OPTION++;
+  for (i = 0; i < ITERS; i++) {
+    set_vec_length(v0,BASE+(i+1)*DELTA);
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
+    combine8_2(v0, data_holder);
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
+    time_stamp[OPTION][i] = ts_diff(time1,time2);
+  }
+
   ///////////////////////////////////////////////////////
   //
   //  Write to file
@@ -178,7 +188,7 @@ int main(int argc, char *argv[])
   ///////////////////////////////////////////////////////
 
   fp = fopen(filename,"w");
-  fprintf(fp,"\nsize, c4, c6_5,  c8,  c8_4\n");
+  fprintf(fp,"\nsize, c4, c6_5,  c8,  c8_4, c8_2\n");
 
   int elements;
 
@@ -503,3 +513,58 @@ void combine8_4(vec_ptr v, data_t *dest)
   *dest = result;
 }
 
+
+void combine8_2(vec_ptr v, data_t *dest)
+{
+  long int i;
+  pack_t xfer;
+  vec_t accum0;
+  vec_t accum1;
+  // vec_t accum2;
+  // vec_t accum3;
+  data_t *data = get_vec_start(v);
+  long int cnt = get_vec_length(v);
+  data_t result = IDENT;
+
+  /* Initialize accum entries to IDENT */
+  for (i = 0; i < VSIZE; i++) xfer.d[i] = IDENT;
+  accum0 = xfer.v;
+  accum1 = xfer.v;
+  // accum2 = xfer.v;
+  // accum3 = xfer.v;
+
+  /* Single step until we have memory alignment */
+  while (((long) data) % (2*VBYTES) && cnt) {
+    result = result OP *data++;
+    cnt--;
+  }
+
+  /* Step through data with VSIZE-way parallelism */
+  while (cnt >= 2*VSIZE) {
+    vec_t chunk0 = *((vec_t *) data);
+    vec_t chunk1 = *((vec_t *) data+VSIZE);
+    // vec_t chunk2 = *((vec_t *) data+2*VSIZE);
+    // vec_t chunk3 = *((vec_t *) data+3*VSIZE);
+    accum0 = accum0 OP chunk0;
+    accum1 = accum1 OP chunk1;
+    // accum2 = accum2 OP chunk2;
+    // accum3 = accum3 OP chunk3;
+    data += 2*VSIZE;
+    cnt -= 2*VSIZE;
+  }
+
+  /* Single-step through the remaining elements */
+  while (cnt) {
+    result = result OP *data++;
+    cnt--;
+  }
+
+  /* Combine elements of accumulator vectors */
+  xfer.v = (accum0 OP accum1);// OP (accum2 OP accum3);
+
+  for (i = 0; i < VSIZE; i++)
+    result = result OP xfer.d[i];
+
+  /* store result */
+  *dest = result;
+}
