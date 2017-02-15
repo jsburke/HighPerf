@@ -1,0 +1,11 @@
+#!/bin/sh
+# Copy the source code to the submit directory
+
+cp \
+   test_branch.c \
+   test_combine1-7.c \
+   test_dot.c \
+   test_eval.c \
+   test_parallel.c \
+   test_unroll.c \
+   ../submit/code
