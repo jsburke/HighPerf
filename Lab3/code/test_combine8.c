@@ -27,7 +27,7 @@ double CPS = 2.9e9;    // Cycles per second -- Will be recomputed at runtime
 #define IDENT 1.0
 #define OP +
 
-#define FILE_PREFIX ((const unsigned char*) "comb8_")
+#define FILE_PREFIX ((const unsigned char*) "float_add_comb8_")
 
 typedef float data_t;
 
