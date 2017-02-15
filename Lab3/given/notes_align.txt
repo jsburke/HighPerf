@@ -1,0 +1,90 @@
+********************************************************************************
+
+Alignment to memory boundaries is essential for using SSE.  It can also be
+helpful for negotiating cache and page boundaries.
+
+(Aligning to virtual or physical memory boundaries?  If the alignment size is
+less than page size, then virtual boundaries = physical boundaries).
+
+Alignmnent is not part of the C standard, so
+-- there are many ways to do it
+-- they are not necessarily portable
+Alignment is likely to be a wrapper around another construct such as
+declaration of allocation.  In these cases, the alignment mechanism
+is provided either by the compiler and the operating system, respectively.
+
+Here are three ways of doing alignment.  Working examples of two of them
+can be found in test_align.c.
+
+------------------------------------------------------
+#include <stdlib.h>
+int posix_memalign(void **memptr, size_t alignment, size_t size);
+
+The posix_memalign() function shall allocate size bytes aligned on a boundary
+specified by alignment, and shall return a pointer to the allocated memory in
+memptr. The value of alignment shall be a multiple of sizeof( void *), that is
+also a power of two. Upon successful completion, the value pointed to by memptr
+shall be a multiple of alignment.
+
+EXAMPLE:
+      err = posix_memalign((void**) &buf, ALIGN, BUFFSIZE);
+      if (err) { HANDLE ERROR }
+
+The free() function shall deallocate memory that has previously been allocated
+by posix_memalign().
+
+------------------------------------------------------
+void* _mm_malloc     a function call to allocate aligned memory
+
+Used with _mm_free(x1)
+
+  //  void* _mm_malloc (int size, int align);
+  x1 = (float*)_mm_malloc(100 * sizeof(float),BOUNDARY_ALIGNMENT);
+USE x1
+  _mm_free(x1);
+
+Use the _mm_malloc and _mm_free intrinsics to allocate and free aligned
+blocks of memory. These intrinsics are based on malloc and free.
+
+------------------------------------------------------
+http://www.emerson.emory.edu/services/gcc/html/Variable_Attributes.html
+http://docs.freebsd.org/info/gcc/gcc.info.Variable_Attributes.html
+
+The keyword __attribute__ allows you to specify special attributes of variables
+or structure fields. This keyword is followed by an attribute specification
+inside double parentheses. Four attributes are currently defined for variables:
+aligned, mode, packed, and section. Other attributes are defined for functions,
+and thus not documented here; see Function Attributes.
+
+aligned (alignment)
+
+This attribute specifies a minimum alignment for the variable or structure
+field, measured in bytes. For example, the declaration:
+
+        int x __attribute__ ((aligned (16))) = 0;
+
+causes the compiler to allocate the global variable x on a 16-byte boundary.
+
+You can also specify the alignment of structure fields. For example, to
+create a double-word aligned int pair, you could write:
+
+        struct foo { int x[2] __attribute__ ((aligned (8))); };
+
+This is an alternative to creating a union with a double member that forces
+the union to be double-word aligned.
+
+It is not possible to specify the alignment of functions; the alignment of
+functions is determined by the machine's requirements and cannot be changed.
+You cannot specify alignment for a typedef name because such a name is just
+an alias, not a distinct type.
+
+The aligned attribute can only increase the alignment; but you can decrease
+it by specifying packed.
+
+The linker of your operating system imposes a maximum alignment. If the
+linker aligns each object file on a four byte boundary, then it is beyond
+the compiler's power to cause anything to be aligned to a larger boundary 
+than that. For example, if the linker happens to put this object file at
+address 136 (eight more than a multiple of 64), then the compiler cannot 
+guarantee an alignment of more than 8 just by aligning variables in the
+object file.
