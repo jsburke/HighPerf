@@ -24,7 +24,7 @@ double CPS = 2.9e9;       // Cycles/sec     -- adjusts
 // #define DELTA 16
 // #define BASE 0
 
-#define OPTIONS 7                          // MAKE 7
+#define OPTIONS 8                          
 #define IDENT 1.0
 
 #define FILE_PREFIX ((const unsigned char*) "double_dot8_")
@@ -82,6 +82,7 @@ double measure_cps(void);
   void dot8(vec_ptr v0, vec_ptr v1, data_t *dest);
   void dot8_2(vec_ptr v0, vec_ptr v1, data_t *dest);
   void dot8_4(vec_ptr v0, vec_ptr v1, data_t *dest);
+  void dot8_8(vec_ptr v0, vec_ptr v1, data_t *dest);  
 
 /*****************************************************************************/
 
@@ -149,7 +150,7 @@ int main(int argc, char *argv[])
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
     dot4(v0, v1, data_holder);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
-    time_stamp[OPTION][i] = diff(time1,time2);
+    time_stamp[OPTION][i] = ts_diff(time1,time2);
   }
 
   OPTION++;
@@ -159,7 +160,7 @@ int main(int argc, char *argv[])
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
     dot5(v0, v1, data_holder);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
-    time_stamp[OPTION][i] = diff(time1,time2);
+    time_stamp[OPTION][i] = ts_diff(time1,time2);
   }
 
   OPTION++;
@@ -169,7 +170,7 @@ int main(int argc, char *argv[])
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
     dot6_2(v0, v1, data_holder);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
-    time_stamp[OPTION][i] = diff(time1,time2);
+    time_stamp[OPTION][i] = ts_diff(time1,time2);
   }
 
   OPTION++;
@@ -179,7 +180,7 @@ int main(int argc, char *argv[])
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
     dot6_5(v0, v1, data_holder);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
-    time_stamp[OPTION][i] = diff(time1,time2);
+    time_stamp[OPTION][i] = ts_diff(time1,time2);
   }
 
   OPTION++;
@@ -189,7 +190,7 @@ int main(int argc, char *argv[])
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
     dot8(v0, v1, data_holder);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
-    time_stamp[OPTION][i] = diff(time1,time2);
+    time_stamp[OPTION][i] = ts_diff(time1,time2);
   }
 
   OPTION++;
@@ -199,10 +200,10 @@ int main(int argc, char *argv[])
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
     dot8_2(v0, v1, data_holder);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
-    time_stamp[OPTION][i] = diff(time1,time2);
+    time_stamp[OPTION][i] = ts_diff(time1,time2);
   }
   
-  // printf("\n");
+   //printf("\n");
 
   OPTION++;
   for (i = 0; i < ITERS; i++) {
@@ -211,9 +212,18 @@ int main(int argc, char *argv[])
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
     dot8_4(v0, v1, data_holder);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
-    time_stamp[OPTION][i] = diff(time1,time2);
+    time_stamp[OPTION][i] = ts_diff(time1,time2);
   }
   
+  OPTION++;
+  for (i = 0; i < ITERS; i++) {
+    set_vec_length(v0,BASE+(i+1)*DELTA);
+    set_vec_length(v1,BASE+(i+1)*DELTA);
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
+    dot8_8(v0, v1, data_holder);
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
+    time_stamp[OPTION][i] = ts_diff(time1,time2);
+  }
 
   ///////////////////////////////////////////////////////////////
   //
@@ -222,7 +232,7 @@ int main(int argc, char *argv[])
   ////////////////////////////////////////////////////////////////
 
   fp = fopen(filename,"w");
-  fprintf(fp,"size, d4, d5, d6_2, d6_5,  d8, d8_2, d8_4\n");  
+  fprintf(fp,"size, dot 4, dot 5, dot 6 by 2, dot 6 by 5, dot 8, dot 8 by 2, dot 8 by 4, dot 8 by 8\n");  
 
   int elements;
 
@@ -684,5 +694,90 @@ void dot8_4(vec_ptr v0, vec_ptr v1, data_t *dest) //assumes they are same length
 
   /* store result */
   //printf("Eight by four: %f\n", result);
+  *dest = result;
+}
+
+void dot8_8(vec_ptr v0, vec_ptr v1, data_t *dest) //assumes they are same length like others
+{
+  long int i;
+  long int get_vec_length(vec_ptr v);
+  data_t *get_vec_start(vec_ptr v);
+  long int cnt = get_vec_length(v0);
+  data_t *data0 = get_vec_start(v0);
+  data_t *data1 = get_vec_start(v1);
+  vec_t accum0;
+  vec_t accum1;
+  vec_t accum2;
+  vec_t accum3;
+  vec_t accum4;
+  vec_t accum5;
+  vec_t accum6;
+  vec_t accum7;
+  data_t result = (data_t)(0);
+  pack_t xfer;
+
+  /* initialize accum entries to 0 */
+  for (i = 0; i < VSIZE; i++) xfer.d[i] = (data_t)(0);
+  accum0 = xfer.v;
+  accum1 = xfer.v;
+  accum2 = xfer.v;
+  accum3 = xfer.v;
+  accum4 = xfer.v;
+  accum5 = xfer.v;
+  accum6 = xfer.v;
+  accum7 = xfer.v;  
+
+  /* Single step until we have memory alignment */
+  while (((long) v0) % (8*VBYTES) && cnt) {
+    result = *data0++ * *data1++;
+    cnt--;
+  }
+
+  /* Step through data with VSIZE-way parallelism */
+  while (cnt >= 8*VSIZE) {
+    vec_t v0chunk0 = *((vec_t *) data0);
+    vec_t v0chunk1 = *((vec_t *) data0+VSIZE);
+    vec_t v0chunk2 = *((vec_t *) data0+2*VSIZE);
+    vec_t v0chunk3 = *((vec_t *) data0+3*VSIZE);
+    vec_t v0chunk4 = *((vec_t *) data0+4*VSIZE);
+    vec_t v0chunk5 = *((vec_t *) data0+5*VSIZE);
+    vec_t v0chunk6 = *((vec_t *) data0+6*VSIZE);
+    vec_t v0chunk7 = *((vec_t *) data0+7*VSIZE);    
+
+    vec_t v1chunk0 = *((vec_t *) data1);
+    vec_t v1chunk1 = *((vec_t *) data1+VSIZE);
+    vec_t v1chunk2 = *((vec_t *) data1+2*VSIZE);
+    vec_t v1chunk3 = *((vec_t *) data1+3*VSIZE);
+    vec_t v1chunk4 = *((vec_t *) data1+4*VSIZE);
+    vec_t v1chunk5 = *((vec_t *) data1+5*VSIZE);
+    vec_t v1chunk6 = *((vec_t *) data1+6*VSIZE);
+    vec_t v1chunk7 = *((vec_t *) data1+7*VSIZE);    
+
+    accum0 = accum0 + (v0chunk0 * v1chunk0);
+    accum1 = accum1 + (v0chunk1 * v1chunk1);
+    accum2 = accum2 + (v0chunk2 * v1chunk2);
+    accum3 = accum3 + (v0chunk3 * v1chunk3);
+    accum4 = accum4 + (v0chunk4 * v1chunk4);
+    accum5 = accum5 + (v0chunk5 * v1chunk5);
+    accum6 = accum6 + (v0chunk6 * v1chunk6);
+    accum7 = accum7 + (v0chunk7 * v1chunk7);    
+
+    data0 += 8*VSIZE;
+    data1 += 8*VSIZE;
+    cnt -= 8*VSIZE;
+  }
+
+  /* Single step through remaining elements */
+  while (cnt) {
+    result += *data0++ * *data1++;
+    cnt--;
+  }
+
+  /* Combine elements of accumulator vector */
+  xfer.v = accum0 + accum1 + accum2 + accum3 + accum4 + accum5 + accum6 + accum7;
+  for (i = 0; i < VSIZE; i++) result += xfer.d[i];
+
+  /* store result */
+  //printf("Eight by eight: %f\n", result);
   *dest = result;
 }
