@@ -17,14 +17,17 @@
 #include <math.h>
 
 #define GIG 1000000000
-#define CPG 2.0           // Cycles per GHz -- Adjust to your computer
+#define CPG 2.9           // Cycles per GHz -- Adjust to your computer
+double CPS = 2.9e9;       // Cycles/sec     -- adjusts
 
-#define ITERS 30
-#define DELTA 16
-#define BASE 0
+// #define ITERS 30
+// #define DELTA 16
+// #define BASE 0
 
 #define OPTIONS 6                          // MAKE 7
 #define IDENT 1.0
+
+#define FILE_PREFIX ((const unsigned char*) "double_dot8_")
 
 typedef double data_t;
 
@@ -46,21 +49,32 @@ typedef union {
   data_t d[VSIZE];
 } pack_t;
 
-/*****************************************************************************/
-main(int argc, char *argv[])
-{
-  int OPTION;
-  struct timespec diff(struct timespec start, struct timespec end);
-  struct timespec time1, time2;
-  struct timespec time_stamp[OPTIONS][ITERS+1];
-  int clock_gettime(clockid_t clk_id, struct timespec *tp);
-  vec_ptr new_vec(long int len);
-  int get_vec_element(vec_ptr v, long int index, data_t *dest);
-  long int get_vec_length(vec_ptr v);
-  int set_vec_length(vec_ptr v, long int index);
-  int init_vector(vec_ptr v, long int len);
-  int init_vector_rand(vec_ptr v, long int len);
-  data_t *data_holder;
+vec_ptr new_vec(long int len);
+int get_vec_element(vec_ptr v, long int index, data_t *dest);
+long int get_vec_length(vec_ptr v);
+int set_vec_length(vec_ptr v, long int index);
+int init_vector(vec_ptr v, long int len);
+int init_vector_rand(vec_ptr v, long int len);
+
+/////////////// Timing related  ///////////////////////////////////////////////
+
+//rdtsc related
+typedef union {
+  unsigned long long int64;
+  struct {unsigned int lo, hi;} int32;
+} mcps_tctr;
+
+#define MCPS_RDTSC(cpu_c) __asm__ __volatile__ ("rdtsc" : \
+                     "=a" ((cpu_c).int32.lo), "=d"((cpu_c).int32.hi))
+
+int clock_gettime(clockid_t clk_id, struct timespec *tp);
+struct timespec diff(struct timespec start, struct timespec end);
+double ts_sec(struct timespec ts);
+struct timespec ts_diff(struct timespec start, struct timespec end);
+double measure_cps(void);
+
+//////////////  dot product prototypes  ///////////////////////////////////////
+
   void dot4(vec_ptr v0, vec_ptr v1, data_t *dest);
   void dot5(vec_ptr v0, vec_ptr v1, data_t *dest);
   void dot6_2(vec_ptr v0, vec_ptr v1, data_t *dest);
@@ -69,13 +83,58 @@ main(int argc, char *argv[])
   void dot8_2(vec_ptr v0, vec_ptr v1, data_t *dest);
   //  void dot8_4(vec_ptr v0, vec_ptr v1, data_t *dest);
 
+/*****************************************************************************/
+
+int main(int argc, char *argv[])
+{
+  int BASE, DELTA, ITERS;
+
+  if(argc != 4)
+  {
+  	printf("num args wrong\n");
+  	return 0;
+  }
+
+  BASE  = strtol(argv[1], NULL, 10);
+  DELTA = strtol(argv[2], NULL, 10);
+  ITERS = strtol(argv[3], NULL, 10);
+
+  if(DELTA == 0)
+  {
+  	printf("DELTA must be greater than zero\n");
+  	return 0;
+  }
+
+  if(ITERS == 0)
+  {
+  	printf("ITERS must be at least one\n");
+  	return 0;
+  }
+
+  int OPTION;
+  struct timespec diff(struct timespec start, struct timespec end);
+  struct timespec time1, time2;
+  struct timespec time_stamp[OPTIONS][ITERS+1];
+
+  data_t *data_holder;
+
   long int i, j, k;
   long long int time_sec, time_ns;
   long int MAXSIZE = BASE+(ITERS+1)*DELTA;
 
-  printf("\n Hello World -- psum examples\n");
+  char filename[255] = {0};
+  FILE *fp;
 
-  // declare and initialize the vector structure
+  sprintf(filename, "%sB%d_D%d_I%d.csv", FILE_PREFIX, BASE, DELTA, ITERS);
+  printf("Current File: %s\n",filename);
+
+  measure_cps();
+
+  /////////////////////////////////////////////////
+  //
+  //  Begin Dot Products
+  //
+  /////////////////////////////////////////////////
   vec_ptr v0 = new_vec(MAXSIZE);
   init_vector_rand(v0, MAXSIZE);
   vec_ptr v1 = new_vec(MAXSIZE);
@@ -154,19 +213,121 @@ main(int argc, char *argv[])
   }
   */
 
-  /* output times */
-  printf("\nsize, d4, d5, d6_2, d6_5,  d8, d8_2, d8_4");  
+  ///////////////////////////////////////////////////////////////
+  //
+  //  Write to file
+  //
+  ////////////////////////////////////////////////////////////////
+
+  fp = fopen(filename,"w");
+  fprintf(fp,"size, d4, d5, d6_2, d6_5,  d8, d8_2, d8_4\n");  
+
+  int elements;
+
   for (i = 0; i < ITERS; i++) {
-    printf("\n%d, ", BASE+(i+1)*DELTA);
+  	elements = BASE+(i+1)*DELTA;
+    fprintf(fp,"%d, ", elements);
     for (j = 0; j < OPTIONS; j++) {
-      if (j != 0) printf(", ");
-      printf("%ld", (long int)((double)(CPG)*(double)
-		 (GIG * time_stamp[j][i].tv_sec + time_stamp[j][i].tv_nsec)));
+      if (j != 0) fprintf(fp,", ");
+      fprintf(fp, "%lf", ((double)(CPG)*(double)
+		 (GIG * time_stamp[j][i].tv_sec + time_stamp[j][i].tv_nsec)/elements));
     }
+    fprintf(fp, "\n");
   }
 
-  printf("\n");
+  fclose(fp);
+  return 0;
 }/* end main */
+
+//////////////////////////////  TIming related  ////////////////////////////////
+
+double ts_sec(struct timespec ts)
+{
+  return ((double)(ts.tv_sec)) + ((double)(ts.tv_nsec))/1.0e9;
+}
+
+/* ---------------------------------------------------------------------------
+| Make the CPU busy, and measure CPS (cycles per second).
+|
+| Explanation:
+| If tests are very fast, they can run so quickly that the SpeedStep control
+| (in kernel and/or on-chip) doesn't notice in time, and the first few tests
+| might finish while the CPU is still in its sleep state (about 800 MHz,
+| judging from my measurements)
+|   A simple way to get around this is to run some kind of busy-loop that
+| forces the OS and/or CPU to notice it needs to go to full clock speed.
+| We print out the results of the computation so the loop won't get optimised
+| away.
+|
+| Copy this code into other programs as desired. It provides three entry
+| points:
+|
+| double ts_sec(ts): converts a timespec into seconds
+| timespec ts_diff(ts1, ts2): computes interval between two timespecs
+| measure_cps(): Does the busy loop and prints out measured CPS (cycles/sec)
+--------------------------------------------------------------------------- */
+
+struct timespec ts_diff(struct timespec start, struct timespec end)
+{
+  struct timespec temp;
+  if ((end.tv_nsec-start.tv_nsec)<0) {
+    temp.tv_sec = end.tv_sec-start.tv_sec-1;
+    temp.tv_nsec = 1000000000+end.tv_nsec-start.tv_nsec;
+  } else {
+    temp.tv_sec = end.tv_sec-start.tv_sec;
+    temp.tv_nsec = end.tv_nsec-start.tv_nsec;
+  }
+  return temp;
+}
+
+double measure_cps()
+{
+  struct timespec cal_start, cal_end;
+  mcps_tctr tsc_start, tsc_end;
+  double total_time;
+  double total_cycles;
+  /* We perform a chaotic iteration and print the result, to defeat
+     compiler optimisation */
+  double chaosC = -1.8464323952913974; double z = 0.0;
+  long int i, ilim, j;
+
+  /* Do it twice and throw away results from the first time; this ensures the
+   * OS and CPU will notice it's busy and set the clock speed. */
+  for(j=0; j<2; j++) {
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &cal_start);
+    MCPS_RDTSC(tsc_start);
+    ilim = 50*1000*1000;
+    for (i=0; i<ilim; i++)
+      z = z * z + chaosC;
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &cal_end);
+    MCPS_RDTSC(tsc_end);
+  }
+
+  total_time = ts_sec(ts_diff(cal_start, cal_end));
+  total_cycles = (double)(tsc_end.int64-tsc_start.int64);
+  CPS = total_cycles / total_time;
+  printf("z == %f, CPS == %g\n", z, CPS);
+
+  return CPS;
+}
+/* ---------------------------------------------------------------------------
+| End of measure_cps code
+--------------------------------------------------------------------------- */
+
+struct timespec diff(struct timespec start, struct timespec end)
+{
+  struct timespec temp;
+  if ((end.tv_nsec-start.tv_nsec)<0) {
+    temp.tv_sec = end.tv_sec-start.tv_sec-1;
+    temp.tv_nsec = 1000000000+end.tv_nsec-start.tv_nsec;
+  } else {
+    temp.tv_sec = end.tv_sec-start.tv_sec;
+    temp.tv_nsec = end.tv_nsec-start.tv_nsec;
+  }
+  return temp;
+}
+
+//////////////////////////////  End Timing Related //////////////////////////////
 
 /**********************************************/
 /* Create vector of specified length */
@@ -250,18 +411,6 @@ data_t *get_vec_start(vec_ptr v)
 }
 
 /*************************************************/
-struct timespec diff(struct timespec start, struct timespec end)
-{
-  struct timespec temp;
-  if ((end.tv_nsec-start.tv_nsec)<0) {
-    temp.tv_sec = end.tv_sec-start.tv_sec-1;
-    temp.tv_nsec = 1000000000+end.tv_nsec-start.tv_nsec;
-  } else {
-    temp.tv_sec = end.tv_sec-start.tv_sec;
-    temp.tv_nsec = end.tv_nsec-start.tv_nsec;
-  }
-  return temp;
-}
 
 double fRand(double fMin, double fMax)
 {
