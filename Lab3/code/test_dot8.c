@@ -24,7 +24,7 @@ double CPS = 2.9e9;       // Cycles/sec     -- adjusts
 // #define DELTA 16
 // #define BASE 0
 
-#define OPTIONS 6                          // MAKE 7
+#define OPTIONS 7                          // MAKE 7
 #define IDENT 1.0
 
 #define FILE_PREFIX ((const unsigned char*) "double_dot8_")
@@ -81,7 +81,7 @@ double measure_cps(void);
   void dot6_5(vec_ptr v0, vec_ptr v1, data_t *dest);
   void dot8(vec_ptr v0, vec_ptr v1, data_t *dest);
   void dot8_2(vec_ptr v0, vec_ptr v1, data_t *dest);
-  //  void dot8_4(vec_ptr v0, vec_ptr v1, data_t *dest);
+  void dot8_4(vec_ptr v0, vec_ptr v1, data_t *dest);
 
 /*****************************************************************************/
 
@@ -201,7 +201,9 @@ int main(int argc, char *argv[])
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
     time_stamp[OPTION][i] = diff(time1,time2);
   }
-  /*
+  
+  // printf("\n");
+
   OPTION++;
   for (i = 0; i < ITERS; i++) {
     set_vec_length(v0,BASE+(i+1)*DELTA);
@@ -211,7 +213,7 @@ int main(int argc, char *argv[])
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
     time_stamp[OPTION][i] = diff(time1,time2);
   }
-  */
+  
 
   ///////////////////////////////////////////////////////////////
   //
@@ -573,14 +575,12 @@ void dot8(vec_ptr v0, vec_ptr v1, data_t *dest)
 void dot8_2(vec_ptr v0, vec_ptr v1, data_t *dest)
 {
   long int i;
-  long int get_vec_length(vec_ptr v);
-  data_t *get_vec_start(vec_ptr v);
   long int cnt = get_vec_length(v0);
   data_t *data0 = get_vec_start(v0);
   data_t *data1 = get_vec_start(v1);
   vec_t accum0;
   vec_t accum1;
-  data_t result = (data_t)(0);
+  data_t result = (data_t)(0); // initialize and cast as data_t zero
   pack_t xfer;
 
   /* initialize accum entries to 0 */
@@ -618,5 +618,71 @@ void dot8_2(vec_ptr v0, vec_ptr v1, data_t *dest)
   for (i = 0; i < VSIZE; i++) result += xfer.d[i];
 
   /* store result */
+  //printf("Eight by two: %f\n", result);  	
+  *dest = result;
+}
+
+void dot8_4(vec_ptr v0, vec_ptr v1, data_t *dest) //assumes they are same length like others
+{
+  long int i;
+  long int get_vec_length(vec_ptr v);
+  data_t *get_vec_start(vec_ptr v);
+  long int cnt = get_vec_length(v0);
+  data_t *data0 = get_vec_start(v0);
+  data_t *data1 = get_vec_start(v1);
+  vec_t accum0;
+  vec_t accum1;
+  vec_t accum2;
+  vec_t accum3;
+  data_t result = (data_t)(0);
+  pack_t xfer;
+
+  /* initialize accum entries to 0 */
+  for (i = 0; i < VSIZE; i++) xfer.d[i] = (data_t)(0);
+  accum0 = xfer.v;
+  accum1 = xfer.v;
+  accum2 = xfer.v;
+  accum3 = xfer.v;
+
+  /* Single step until we have memory alignment */
+  while (((long) v0) % (4*VBYTES) && cnt) {
+    result = *data0++ * *data1++;
+    cnt--;
+  }
+
+  /* Step through data with VSIZE-way parallelism */
+  while (cnt >= 4*VSIZE) {
+    vec_t v0chunk0 = *((vec_t *) data0);
+    vec_t v0chunk1 = *((vec_t *) data0+VSIZE);
+    vec_t v0chunk2 = *((vec_t *) data0+2*VSIZE);
+    vec_t v0chunk3 = *((vec_t *) data0+3*VSIZE);
+
+    vec_t v1chunk0 = *((vec_t *) data1);
+    vec_t v1chunk1 = *((vec_t *) data1+VSIZE);
+    vec_t v1chunk2 = *((vec_t *) data1+2*VSIZE);
+    vec_t v1chunk3 = *((vec_t *) data1+3*VSIZE);
+
+    accum0 = accum0 + (v0chunk0 * v1chunk0);
+    accum1 = accum1 + (v0chunk1 * v1chunk1);
+    accum2 = accum2 + (v0chunk2 * v1chunk2);
+    accum3 = accum3 + (v0chunk3 * v1chunk3);
+
+    data0 += 4*VSIZE;
+    data1 += 4*VSIZE;
+    cnt -= 4*VSIZE;
+  }
+
+  /* Single step through remaining elements */
+  while (cnt) {
+    result += *data0++ * *data1++;
+    cnt--;
+  }
+
+  /* Combine elements of accumulator vector */
+  xfer.v = accum0 + accum1 + accum2 + accum3;
+  for (i = 0; i < VSIZE; i++) result += xfer.d[i];
+
+  /* store result */
+  //printf("Eight by four: %f\n", result);
   *dest = result;
 }
