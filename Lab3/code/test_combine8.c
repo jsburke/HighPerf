@@ -23,7 +23,7 @@ double CPS = 2.9e9;    // Cycles per second -- Will be recomputed at runtime
 // #define DELTA 32
 // #define BASE 0
 
-#define OPTIONS 5       // NEED TO MODIFY
+#define OPTIONS 6      // NEED TO MODIFY
 #define IDENT 1.0
 #define OP +
 
@@ -79,6 +79,7 @@ void combine6_5(vec_ptr v, data_t *dest);
 void combine8(vec_ptr v, data_t *dest);
 void combine8_4(vec_ptr v, data_t *dest);
 void combine8_2(vec_ptr v, data_t *dest);
+void combine8_8(vec_ptr v, data_t *dest);
 
 /*****************************************************************************/
 int main(int argc, char *argv[])
@@ -181,6 +182,15 @@ int main(int argc, char *argv[])
     time_stamp[OPTION][i] = ts_diff(time1,time2);
   }
 
+    OPTION++;
+  for (i = 0; i < ITERS; i++) {
+    set_vec_length(v0,BASE+(i+1)*DELTA);
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
+    combine8_8(v0, data_holder);
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
+    time_stamp[OPTION][i] = ts_diff(time1,time2);
+  }  
+
   ///////////////////////////////////////////////////////
   //
   //  Write to file
@@ -197,7 +207,7 @@ int main(int argc, char *argv[])
     fprintf(fp, "%d, ", elements);
     for (j = 0; j < OPTIONS; j++) {
       if (j != 0) fprintf(fp, ", ");
-      fprintf(fp, "%lf", ((double)(CPG)*(double)(GIG * time_stamp[j][i].tv_sec + time_stamp[j][i].tv_nsec)/elements));
+      fprintf(fp, "%ld", (long int)((double)(CPG)*(double)(GIG * time_stamp[j][i].tv_sec + time_stamp[j][i].tv_nsec)));
     }
     fprintf(fp, "\n");
   }
