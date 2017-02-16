@@ -25,11 +25,11 @@ double CPS = 2.9e9;    // Cycles per second -- Will be recomputed at runtime
 
 #define OPTIONS 6      // NEED TO MODIFY
 #define IDENT 1.0
-#define OP +
+#define OP *
 
-#define FILE_PREFIX ((const unsigned char*) "int_add_comb8_")
+#define FILE_PREFIX ((const unsigned char*) "double_mul_comb8_")
 
-typedef int data_t;
+typedef double data_t;
 
 /* Create abstract data type for vector */
 typedef struct {
