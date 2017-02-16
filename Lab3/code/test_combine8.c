@@ -27,9 +27,9 @@ double CPS = 2.9e9;    // Cycles per second -- Will be recomputed at runtime
 #define IDENT 1.0
 #define OP +
 
-#define FILE_PREFIX ((const unsigned char*) "float_add_comb8_")
+#define FILE_PREFIX ((const unsigned char*) "int_add_comb8_")
 
-typedef float data_t;
+typedef int data_t;
 
 /* Create abstract data type for vector */
 typedef struct {
@@ -198,7 +198,7 @@ int main(int argc, char *argv[])
   ///////////////////////////////////////////////////////
 
   fp = fopen(filename,"w");
-  fprintf(fp,"\nsize, c4, c6_5,  c8,  c8_4, c8_2\n");
+  fprintf(fp,"\nsize, c4, c6_5,  c8,  c8_4, c8_2, c8_8\n");
 
   int elements;
 
@@ -207,7 +207,7 @@ int main(int argc, char *argv[])
     fprintf(fp, "%d, ", elements);
     for (j = 0; j < OPTIONS; j++) {
       if (j != 0) fprintf(fp, ", ");
-      fprintf(fp, "%ld", (long int)((double)(CPG)*(double)(GIG * time_stamp[j][i].tv_sec + time_stamp[j][i].tv_nsec)));
+      fprintf(fp, "%lf", ((double)(CPG)*(double)(GIG * time_stamp[j][i].tv_sec + time_stamp[j][i].tv_nsec)/elements));
     }
     fprintf(fp, "\n");
   }
