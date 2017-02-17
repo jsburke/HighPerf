@@ -27,9 +27,9 @@ double CPS = 2.9e9;       // Cycles/sec     -- adjusts
 #define OPTIONS 8                          
 #define IDENT 1.0
 
-#define FILE_PREFIX ((const unsigned char*) "int_dot8_")
+#define FILE_PREFIX ((const unsigned char*) "double_dot8_")
 
-typedef int data_t;
+typedef double data_t;
 
 /* Create abstract data type for vector */
 typedef struct {

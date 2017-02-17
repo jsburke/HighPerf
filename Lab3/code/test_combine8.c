@@ -25,11 +25,11 @@ double CPS = 2.9e9;    // Cycles per second -- Will be recomputed at runtime
 
 #define OPTIONS 6      // NEED TO MODIFY
 #define IDENT 1.0
-#define OP *
+#define OP + 
 
-#define FILE_PREFIX ((const unsigned char*) "double_mul_comb8_")
+#define FILE_PREFIX ((const unsigned char*) "int_add_comb8_")
 
-typedef double data_t;
+typedef int data_t;
 
 /* Create abstract data type for vector */
 typedef struct {
@@ -201,7 +201,7 @@ int main(int argc, char *argv[])
   fprintf(fp,"\nsize, c4, c6_5,  c8,  c8_4, c8_2, c8_8\n");
 
   int elements;
-
+  //printf("CPS calculated at: %lf",CPS);
   for (i = 0; i < ITERS; i++) {
   	elements = BASE+(i+1)*DELTA;
     fprintf(fp, "%d, ", elements);
