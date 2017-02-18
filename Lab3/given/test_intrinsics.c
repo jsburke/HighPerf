@@ -1,5 +1,5 @@
 /**************************************************************/
-// gcc -msse4.1 -O1 -o test_intrinsics test_intrinsics.c -lrt -lm
+// gcc -mavx -O1 -o test_intrinsics test_intrinsics.c -lrt -lm
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,6 +9,7 @@
 #include <assert.h>
 #include <xmmintrin.h>
 #include <smmintrin.h>
+#include <immintrin.h>              //changed
 
 #define FALSE 0
 #define TRUE 1
@@ -30,7 +31,7 @@
 typedef float data_t;
 
 /**************************************************************/
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
   int OPTION;
   struct timespec diff(struct timespec start, struct timespec end);
@@ -38,7 +39,7 @@ main(int argc, char *argv[])
   struct timespec time_stamp[OPTIONS][ITERS+1];
   int clock_gettime(clockid_t clk_id, struct timespec *tp);
 
-  int i,j,k;   	   /* Local variables. */
+  int i,j,k;       /* Local variables. */
   long long int time_sec, time_ns;
   long int MAXSIZE = BASE+(ITERS+1)*DELTA;
 
@@ -87,12 +88,12 @@ main(int argc, char *argv[])
     for (j = 0; j < OPTIONS; j++) {
       if (j != 0) printf(", ");
       printf("%ld", (long int)((double)(CPG)*(double)
-		 (GIG * time_stamp[j][i].tv_sec + time_stamp[j][i].tv_nsec)));
+     (GIG * time_stamp[j][i].tv_sec + time_stamp[j][i].tv_nsec)));
     }
   }
 
   printf("\n Goodbye World!\n");
-
+  return 0;
 }/* end main */
 
 /*************************************************/
@@ -146,9 +147,9 @@ void ZeroArray(data_t* v, long int len)
 
 /* Simple distance calc */
 void ArrayTest1(data_t* pArray1,       // [in] 1st source array
-		data_t* pArray2,       // [in] 2nd source array
-		data_t* pResult,       // [out] result array
-		long int nSize)            // [in] size of all arrays
+    data_t* pArray2,       // [in] 2nd source array
+    data_t* pResult,       // [out] result array
+    long int nSize)            // [in] size of all arrays
 {
   int i;
 
@@ -159,7 +160,7 @@ void ArrayTest1(data_t* pArray1,       // [in] 1st source array
 
   for (i = 0; i < nSize; i++){
     *pDest = sqrtf((*pSource1) * (*pSource1) +
-		  (*pSource2) * (*pSource2)) + 0.5f;
+      (*pSource2) * (*pSource2)) + 0.5f;
     pSource1++;
     pSource2++;
     pDest++;
@@ -168,9 +169,9 @@ void ArrayTest1(data_t* pArray1,       // [in] 1st source array
 
 /* Simple distance calc w/ SSE */
 void ArrayTest2(data_t* pArray1,       // [in] 1st source array
-		data_t* pArray2,       // [in] 2nd source array
-		data_t* pResult,       // [out] result array
-		long int nSize)            // [in] size of all arrays
+    data_t* pArray2,       // [in] 2nd source array
+    data_t* pResult,       // [out] result array
+    long int nSize)            // [in] size of all arrays
 {
   int  i, nLoop = nSize/4;
 
@@ -196,14 +197,14 @@ void ArrayTest2(data_t* pArray1,       // [in] 1st source array
 
 /* Simple distance calc w/ SSE */
 void ArrayTest3(data_t* pArray1,       // [in] 1st source array
-		data_t* pArray2,       // [in] 2nd source array
-		data_t* pResult,       // [out] result array
-		long int nSize)            // [in] size of all arrays
+    data_t* pArray2,       // [in] 2nd source array
+    data_t* pResult,       // [out] result array
+    long int nSize)            // [in] size of all arrays
 {
   int  i, nLoop = nSize/8;
 
   __m256   m1, m2, m3, m4;
-  __m256   m0_5 = _mm256_set_ps1(0.5f);
+  __m256   m0_5 = _mm256_set1_ps(0.5f);   //changed
 
   __m256*  pSrc1 = (__m256*) pArray1;
   __m256*  pSrc2 = (__m256*) pArray2;
