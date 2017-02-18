@@ -39,6 +39,7 @@ void  ZeroArray(data_t* pA, long int nSize);
 void  ArrayTest1(data_t* pA1, data_t* pA2, data_t* pR, long int nSize);
 void  ArrayTest2(data_t* pA1, data_t* pA2, data_t* pR, long int nSize);
 void  ArrayTest3(data_t* pA1, data_t* pA2, data_t* pR, long int nSize);
+void ArrayTest4(data_t* pArray1, data_t* pArray2, data_t* pResult); // benchmark add
 
 ///////////// Timing related  /////////////////////////////////////////
 
@@ -374,4 +375,12 @@ void ArrayTest3(data_t* pArray1,       // [in] 1st source array
     pSrc2++;
     pDest++;
   }
+}
+
+void ArrayTest4(data_t* pArray1, data_t* pArray2, data_t* pResult, long int nSize)
+{
+  int i;
+  int nLoop = nSize/8;
+
+  __m256 m1, m2, m3, m4;//incomplete
 }
