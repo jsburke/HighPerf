@@ -25,7 +25,7 @@ double CPS = 2.9e9;       // Cycles/sec     -- adjusts
 // #define DELTA 32
 // #define BASE 0
 
-#define OPTIONS 2
+#define OPTIONS 3
 #define IDENT 1.0
 #define OP *
 
@@ -38,6 +38,7 @@ void  InitArray_rand(data_t* pA, long int nSize);
 void  ZeroArray(data_t* pA, long int nSize);
 void  ArrayTest1(data_t* pA1, data_t* pA2, data_t* pR, long int nSize);
 void  ArrayTest2(data_t* pA1, data_t* pA2, data_t* pR, long int nSize);
+void  ArrayTest3(data_t* pA1, data_t* pA2, data_t* pR, long int nSize);
 
 ///////////// Timing related  /////////////////////////////////////////
 
@@ -138,6 +139,14 @@ main(int argc, char *argv[])
     time_stamp[OPTION][i] = diff(time1,time2);
   }
 
+  OPTION++;
+  for (i = 0; i < ITERS; i++) {
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
+    ArrayTest3(pArray1, pArray2, pResult, BASE+(i+1)*DELTA);
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
+    time_stamp[OPTION][i] = diff(time1,time2);
+  }
+
   ///////////////////////////////////////////////
   //
   //  Write to file
@@ -145,7 +154,7 @@ main(int argc, char *argv[])
   ///////////////////////////////////////////////
 
   fp = fopen(filename,"w");
-  fprintf(fp,"size, Test 1, Test 2\n");  
+  fprintf(fp,"size, Test 1, Test 2, Test 3\n");  
 
   int elements;
 
