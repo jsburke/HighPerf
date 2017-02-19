@@ -1,5 +1,5 @@
-/*****************************************************************************/
-// gcc -o test_dot test_dot.c -lrt -lm
+/* -*- C++ -*- ****************************************************************/
+// gcc -o test_dot test_dot8.c -lrt -lm
 //
 // dot4    -- baseline scalar
 // dot5    -- scalar unrolled by 2
@@ -7,7 +7,8 @@
 // dot6_5  -- scalar unrolled by 5 w/ 5 accumulators
 // dot8    -- vector
 // dot8_2  -- vector w/ 2 accumulators
-// dot8_4  -- vector w/ 4 accumulators          TO BE WRITTEN
+// dot8_4  -- vector w/ 4 accumulators
+// dot8_8  -- vector w/ 8 accumulators
 
 
 #include <stdio.h>
@@ -92,7 +93,7 @@ int main(int argc, char *argv[])
 
   if(argc != 4)
   {
-  	printf("num args wrong\n");
+  	printf("Must give exactly 3 arguments (BASE, DELTA, ITERS)\n");
   	return 0;
   }
 
@@ -553,7 +554,7 @@ void dot8(vec_ptr v0, vec_ptr v1, data_t *dest)
 
   /* Single step until we have memory alignment */
   while (((long) v0) % VBYTES && cnt) {
-    result = *data0++ * *data1++;
+    result += *data0++ * *data1++;
     cnt--;
   }
 
@@ -598,14 +599,18 @@ void dot8_2(vec_ptr v0, vec_ptr v1, data_t *dest)
   accum0 = xfer.v;
   accum1 = xfer.v;
 
+  // printf("data0, data1 %lx  %lx\n", ((long) data0), ((long) data1));
+  // printf("  data0 %% VBYTES && cnt == %lx\n", (long)(((long) data0) % VBYTES && cnt));
   /* Single step until we have memory alignment */
-  while (((long) v0) % VBYTES && cnt) {
-    result = *data0++ * *data1++;
+  while (((long) data0) % VBYTES && cnt) {
+    result += *data0++ * *data1++;
     cnt--;
   }
 
+  // printf("data0, data1 %lx  %lx\n", ((long) data0), ((long) data1));
+
   /* Step through data with VSIZE-way parallelism */
-  while (cnt >= VSIZE) {
+  while (cnt >= 2*VSIZE) {
     vec_t v0chunk0 = *((vec_t *) data0);
     vec_t v1chunk0 = *((vec_t *) data1);
     vec_t v0chunk1 = *((vec_t *) data0+VSIZE);
@@ -615,8 +620,10 @@ void dot8_2(vec_ptr v0, vec_ptr v1, data_t *dest)
     data0 += 2*VSIZE;
     data1 += 2*VSIZE;
     cnt -= 2*VSIZE;
+    // printf("  cnt %ld data0, data1 %lx  %lx\n", cnt, ((long) data0), ((long) data1));
   }
 
+  // printf("remaining count %ld\n", cnt);
   /* Single step through remaining elements */
   while (cnt) {
     result += *data0++ * *data1++;
@@ -656,7 +663,7 @@ void dot8_4(vec_ptr v0, vec_ptr v1, data_t *dest) //assumes they are same length
 
   /* Single step until we have memory alignment */
   while (((long) v0) % (4*VBYTES) && cnt) {
-    result = *data0++ * *data1++;
+    result += *data0++ * *data1++;
     cnt--;
   }
 
@@ -729,7 +736,7 @@ void dot8_8(vec_ptr v0, vec_ptr v1, data_t *dest) //assumes they are same length
 
   /* Single step until we have memory alignment */
   while (((long) v0) % (8*VBYTES) && cnt) {
-    result = *data0++ * *data1++;
+    result += *data0++ * *data1++;
     cnt--;
   }
 
