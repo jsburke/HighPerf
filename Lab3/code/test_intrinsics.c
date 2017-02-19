@@ -487,3 +487,21 @@ void Test_Mul_256(data_t* pArray1, data_t* pArray2, data_t* pResult, long int nS
     pDest++;
   }
 }
+
+double Test_Dot_128(data_t* pArray1, data_t* pArray2, long int nSize)
+{ //Sum of products of aligned multiplies
+  int i;
+  int nLoop = nSize/4;
+
+  __m128* pSrc1 = (__m128*) pArray1;
+  __m128* pSrc2 = (__m128*) pArray2;
+  __m128 m_mul;
+
+  for(i = 0; i < nLoop; i++)
+  {
+    m_mul = _mm_mul_ps(*pSrc1,*pSrc2);
+
+    pSrc1++;
+    pSrc2++;  //  This code very incomplete
+  }
+}
