@@ -23,9 +23,15 @@ if (!(-x $bin)) {
   die "No binary $bin, compile error?\n";
 }
 
+# Test strange sizes
 for($DELTA=14; $DELTA<=17; $DELTA++) {
-  system("$bin 0 $DELTA 10");
+  $cmd = "$bin 0 $DELTA 10";
+  print "$cmd\n";
+  system($cmd);
 }
+
+# Bigger test for plotting
+system("$bin 0 64 50");
 
 $ddir = "p1_data";
 if(!(-d $ddir)) {

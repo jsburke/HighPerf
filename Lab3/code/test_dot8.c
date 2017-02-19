@@ -149,7 +149,7 @@ int main(int argc, char *argv[])
     set_vec_length(v0,BASE+(i+1)*DELTA);
     set_vec_length(v1,BASE+(i+1)*DELTA);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
-    dot4(v0, v1, data_holder);
+//    dot4(v0, v1, data_holder);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
     time_stamp[OPTION][i] = ts_diff(time1,time2);
   }
@@ -159,7 +159,7 @@ int main(int argc, char *argv[])
     set_vec_length(v0,BASE+(i+1)*DELTA);
     set_vec_length(v1,BASE+(i+1)*DELTA);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
-    dot5(v0, v1, data_holder);
+//    dot5(v0, v1, data_holder);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
     time_stamp[OPTION][i] = ts_diff(time1,time2);
   }
@@ -169,7 +169,7 @@ int main(int argc, char *argv[])
     set_vec_length(v0,BASE+(i+1)*DELTA);
     set_vec_length(v1,BASE+(i+1)*DELTA);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
-    dot6_2(v0, v1, data_holder);
+//    dot6_2(v0, v1, data_holder);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
     time_stamp[OPTION][i] = ts_diff(time1,time2);
   }
@@ -179,7 +179,7 @@ int main(int argc, char *argv[])
     set_vec_length(v0,BASE+(i+1)*DELTA);
     set_vec_length(v1,BASE+(i+1)*DELTA);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
-    dot6_5(v0, v1, data_holder);
+//    dot6_5(v0, v1, data_holder);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
     time_stamp[OPTION][i] = ts_diff(time1,time2);
   }
@@ -189,7 +189,7 @@ int main(int argc, char *argv[])
     set_vec_length(v0,BASE+(i+1)*DELTA);
     set_vec_length(v1,BASE+(i+1)*DELTA);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
-    dot8(v0, v1, data_holder);
+//    dot8(v0, v1, data_holder);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
     time_stamp[OPTION][i] = ts_diff(time1,time2);
   }
@@ -211,7 +211,7 @@ int main(int argc, char *argv[])
     set_vec_length(v0,BASE+(i+1)*DELTA);
     set_vec_length(v1,BASE+(i+1)*DELTA);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
-    dot8_4(v0, v1, data_holder);
+//    dot8_4(v0, v1, data_holder);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
     time_stamp[OPTION][i] = ts_diff(time1,time2);
   }
@@ -221,7 +221,7 @@ int main(int argc, char *argv[])
     set_vec_length(v0,BASE+(i+1)*DELTA);
     set_vec_length(v1,BASE+(i+1)*DELTA);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
-    dot8_8(v0, v1, data_holder);
+//    dot8_8(v0, v1, data_holder);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
     time_stamp[OPTION][i] = ts_diff(time1,time2);
   }
@@ -553,7 +553,9 @@ void dot8(vec_ptr v0, vec_ptr v1, data_t *dest)
   accum = xfer.v;
 
   /* Single step until we have memory alignment */
-  while (((long) v0) % VBYTES && cnt) {
+  // while (((long) v0) % VBYTES && cnt) {
+  while ((cnt > 0) &&
+      ( (((long) data0) % VBYTES) || (((long) data1) % VBYTES)) ) {
     result += *data0++ * *data1++;
     cnt--;
   }
@@ -569,7 +571,7 @@ void dot8(vec_ptr v0, vec_ptr v1, data_t *dest)
   }
 
   /* Single step through remaining elements */
-  while (cnt) {
+  while (cnt > 0) {
     result += *data0++ * *data1++;
     cnt--;
   }
@@ -601,13 +603,16 @@ void dot8_2(vec_ptr v0, vec_ptr v1, data_t *dest)
 
   // printf("data0, data1 %lx  %lx\n", ((long) data0), ((long) data1));
   // printf("  data0 %% VBYTES && cnt == %lx\n", (long)(((long) data0) % VBYTES && cnt));
+  // printf(" initial cnt = %ld\n", cnt);
   /* Single step until we have memory alignment */
-  while (((long) data0) % VBYTES && cnt) {
+  while ((cnt > 0) &&
+      ( (((long) data0) % VBYTES) || (((long) data1) % VBYTES)) ) {
     result += *data0++ * *data1++;
     cnt--;
   }
 
   // printf("data0, data1 %lx  %lx\n", ((long) data0), ((long) data1));
+  // printf("  mainlp cnt = %ld\n", cnt);
 
   /* Step through data with VSIZE-way parallelism */
   while (cnt >= 2*VSIZE) {
@@ -623,9 +628,9 @@ void dot8_2(vec_ptr v0, vec_ptr v1, data_t *dest)
     // printf("  cnt %ld data0, data1 %lx  %lx\n", cnt, ((long) data0), ((long) data1));
   }
 
-  // printf("remaining count %ld\n", cnt);
+  // printf("  remain cnt = %ld\n", cnt);
   /* Single step through remaining elements */
-  while (cnt) {
+  while (cnt > 0) {
     result += *data0++ * *data1++;
     cnt--;
   }
@@ -662,7 +667,8 @@ void dot8_4(vec_ptr v0, vec_ptr v1, data_t *dest) //assumes they are same length
   accum3 = xfer.v;
 
   /* Single step until we have memory alignment */
-  while (((long) v0) % (4*VBYTES) && cnt) {
+  while ((cnt > 0) &&
+      ( (((long) data0) % VBYTES) || (((long) data1) % VBYTES)) ) {
     result += *data0++ * *data1++;
     cnt--;
   }
@@ -690,7 +696,7 @@ void dot8_4(vec_ptr v0, vec_ptr v1, data_t *dest) //assumes they are same length
   }
 
   /* Single step through remaining elements */
-  while (cnt) {
+  while (cnt > 0) {
     result += *data0++ * *data1++;
     cnt--;
   }
@@ -735,7 +741,8 @@ void dot8_8(vec_ptr v0, vec_ptr v1, data_t *dest) //assumes they are same length
   accum7 = xfer.v;  
 
   /* Single step until we have memory alignment */
-  while (((long) v0) % (8*VBYTES) && cnt) {
+  while ((cnt > 0) &&
+      ( (((long) data0) % VBYTES) || (((long) data1) % VBYTES)) ) {
     result += *data0++ * *data1++;
     cnt--;
   }
@@ -775,7 +782,7 @@ void dot8_8(vec_ptr v0, vec_ptr v1, data_t *dest) //assumes they are same length
   }
 
   /* Single step through remaining elements */
-  while (cnt) {
+  while (cnt > 0) {
     result += *data0++ * *data1++;
     cnt--;
   }
