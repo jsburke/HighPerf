@@ -514,3 +514,46 @@ float Test_Dot_128(data_t* pArray1, data_t* pArray2, long int nSize)
 
   return result;
 }
+
+float Test_Dot_256(data_t* pArray1, data_t* pArray2, long int nSize)
+{ //Sum of products of aligned multiplies, floats
+  int i;
+  int nLoop = nSize/8;
+
+  __m256* pSrc1 = (__m256*) pArray1;
+  __m256* pSrc2 = (__m256*) pArray2;
+  __m256  m_mul;
+  __m256  m_accum = _mm_set_ps1(0.0f); // set an accumulator to zero
+                                       // may want to do a _mm256_broadcast_ss(&flt)
+
+  for(i = 0; i < nLoop; i++)
+  {
+    m_mul   = _mm256_mul_ps(*pSrc1,*pSrc2);
+    m_accum = _mm256_add_ps(m_mul, m_accum);
+
+    pSrc1++;
+    pSrc2++;  //  This code very incomplete
+  }
+
+  return sum_256(m_accum);
+}
+
+float sum_256(__m256 x)
+{
+
+  //should cover all corner cases
+  //tldr: line and add up each of the 8 in the __MM256
+  const __m128 hiQuad  = _m256_extractf128_ps(x, 1);
+  const __m128 lowQuad = _m256_castps256_ps128(x);
+  const __m128 sumQuad = _mm_add_ps(lowQuad, hiQuad);
+
+  const __m128 lowDual = sumQuad;
+  const __m128 hiDual  = _mm_moveh1_ps(sumQuad, sumQuad);
+  const __m128 sumDual = _mm_add_ps(lowDual, hiDual);
+
+  const __m128 low = sumDual;
+  const __m128 hi  = _mm_shuffle_ps(sumDual, sumDual, 0x1);
+  const __m128 sum = _mm_add_ss(low, hi);
+
+  return _mm_cvtss_f32(sum);
+}
