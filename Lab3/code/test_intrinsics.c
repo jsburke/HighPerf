@@ -488,20 +488,29 @@ void Test_Mul_256(data_t* pArray1, data_t* pArray2, data_t* pResult, long int nS
   }
 }
 
-double Test_Dot_128(data_t* pArray1, data_t* pArray2, long int nSize)
+float Test_Dot_128(data_t* pArray1, data_t* pArray2, long int nSize)
 { //Sum of products of aligned multiplies
   int i;
   int nLoop = nSize/4;
+  float result;
 
   __m128* pSrc1 = (__m128*) pArray1;
   __m128* pSrc2 = (__m128*) pArray2;
-  __m128 m_mul;
+  __m128  m_mul;
+  __m128  m_accum = _mm_set_ps1(0.0f); // set an accumulator to zero
 
   for(i = 0; i < nLoop; i++)
   {
-    m_mul = _mm_mul_ps(*pSrc1,*pSrc2);
+    m_mul   = _mm_mul_ps(*pSrc1,*pSrc2);
+    m_accum = _mm_add_ps(m_mul, m_accum);
 
     pSrc1++;
     pSrc2++;  //  This code very incomplete
   }
+
+  m_accum = _mm_hadd_ps(m_accum, m_accum); //sum the values
+  m_accum = _mm_hadd_ps(m_accum, m_accum);
+  _mm_store_ss(&result, m_accum);          // store the result
+
+  return result;
 }
