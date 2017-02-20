@@ -25,7 +25,7 @@ double CPS = 2.9e9;       // Cycles/sec     -- adjusts
 // #define DELTA 32
 // #define BASE 0
 
-#define OPTIONS 10
+#define OPTIONS 11
 #define IDENT 1.0
 #define OP *
 
@@ -54,6 +54,7 @@ float Test_Dot_128(data_t* pArray1, data_t* pArray2, long int nSize);  // first 
 float Test_Dot_256(data_t* pArray1, data_t* pArray2, long int nSize);  // second dot prod with intrin
 
 float Test_Dot_128_single(data_t* pArray1, data_t* pArray2, long int nSize); // uses intrinsic dp_ps
+float Test_Dot_256_single(data_t* pArray1, data_t* pArray2, long int nSize);
 
 ///////////// Timing related  /////////////////////////////////////////
 
@@ -204,7 +205,7 @@ int main(int argc, char *argv[])
     time_stamp[OPTION][i] = ts_diff(time1,time2);
   }   
 
-  //printf("%f\n", dot_res);
+  printf("%f\n", dot_res);
 
     OPTION++;
   for (i = 0; i < ITERS; i++) {
@@ -214,7 +215,7 @@ int main(int argc, char *argv[])
     time_stamp[OPTION][i] = ts_diff(time1,time2);
   }
 
-  //printf("%f\n", dot_res);
+  printf("%f\n", dot_res);
 
     OPTION++;
   for (i = 0; i < ITERS; i++) {
@@ -224,7 +225,17 @@ int main(int argc, char *argv[])
     time_stamp[OPTION][i] = ts_diff(time1,time2);
   }   
 
-  //printf("%f\n", dot_res);  
+  printf("%f\n", dot_res);  
+
+    OPTION++;
+  for (i = 0; i < ITERS; i++) {
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
+    dot_res = Test_Dot_256_single(pArray1, pArray2, BASE+(i+1)*DELTA);
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
+    time_stamp[OPTION][i] = ts_diff(time1,time2);
+  }   
+
+  printf("%f\n", dot_res);  
 
   ///////////////////////////////////////////////
   //
@@ -233,7 +244,7 @@ int main(int argc, char *argv[])
   ///////////////////////////////////////////////
 
   fp = fopen(filename,"w");
-  fprintf(fp,"size, Test 1, Test 2, Test 3, Test Add 128, Test Add 256, Test Mul 128, Test Mul 256\n");  
+  fprintf(fp,"size, Test 1, Test 2, Test 3, Test Add 128, Test Add 256, Test Mul 128, Test Mul 256, dot 128, dot 256, dp 128, dp 256\n");  
 
   int elements;
 
@@ -627,4 +638,28 @@ float Test_Dot_128_single(data_t* pArray1, data_t* pArray2, long int nSize)
   _mm_store_ss(&result, m_accum);// store the result, don't need hadd because dp covers it
 
   return result;
+}
+
+float Test_Dot_256_single(data_t* pArray1, data_t* pArray2, long int nSize)
+{
+
+  int i;
+  int nLoop = nSize/8;
+  float result;
+
+  __m256* pSrc1   = (__m256*) pArray1;
+  __m256* pSrc2   = (__m256*) pArray2;
+  __m256  m_accum = _mm256_set_ps(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+  __m256  m_dotpart;
+
+  for(i = 0; i < nLoop; i++)
+  {
+    m_dotpart = _mm256_dp_ps(*pSrc1, *pSrc2, 0xff);
+    m_accum   = _mm256_add_ps(m_dotpart, m_accum);    
+
+    pSrc1++;
+    pSrc2++;
+  }
+
+  return sum_256(m_accum)/4;  // always off by a factor of four and can't intrinsic it
 }
