@@ -18,9 +18,7 @@
 #include <time.h>
 #include <math.h>
 
-#define GIG 1000000000
-#define CPG 2.9           // Cycles per GHz -- Adjust to your computer
-double CPS = 2.9e9;       // Cycles/sec     -- adjusts
+double CPS = 2.9e9;       // Cycles/sec - adjusted by measure_cps()
 
 // #define ITERS 30
 // #define DELTA 16
@@ -245,8 +243,9 @@ int main(int argc, char *argv[])
     fprintf(fp,"%d, ", elements);
     for (j = 0; j < OPTIONS; j++) {
       if (j != 0) fprintf(fp,", ");
-      fprintf(fp, "%lf", ((double)(CPG)*(double)
-		 (GIG * time_stamp[j][i].tv_sec + time_stamp[j][i].tv_nsec)/elements));
+      double seconds = ((double) time_stamp[j][i].tv_sec)
+                     + ((double) time_stamp[j][i].tv_nsec)/1.0e9;
+      fprintf(fp, "%lf", CPS * seconds / elements);
     }
     fprintf(fp, "\n");
   }
