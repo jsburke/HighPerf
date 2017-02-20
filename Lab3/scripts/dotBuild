@@ -19,8 +19,10 @@ if(!(-f $src)) {
   die "$myname: Source file $src not found.\n";
 }
 
+$vecflags = "-mavx";
+
 for $type ("float", "double") {
-  system("gcc -O1 -mavx -DDTYPE=$type $src -lrt -lm -o $bin");
+  system("gcc -O1 $vecflags -DDTYPE=$type $src -lrt -lm -o $bin");
   if (!(-x $bin)) {
     die "$myname: No binary $bin, compile error?\n";
   }
