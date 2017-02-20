@@ -19,21 +19,20 @@ if(!(-f $src)) {
   die "$myname: Source file $src not found.\n";
 }
 
-system("gcc -O1 -mavx2 $src -lrt -lm -o $bin");
-
-if (!(-x $bin)) {
-  die "$myname: No binary $bin, compile error?\n";
+for $type ("float", "double") {
+  system("gcc -O1 -mavx2 -DDTYPE=$type $src -lrt -lm -o $bin");
+  if (!(-x $bin)) {
+    die "$myname: No binary $bin, compile error?\n";
+  }
+  # Test strange sizes
+  for($DELTA=14; $DELTA<=17; $DELTA++) {
+    $cmd = "$bin 0 $DELTA 10";
+    print "$cmd\n";
+    system($cmd);
+  }
+  # Bigger test for plotting
+  system("$bin 0 64 50");
 }
-
-# Test strange sizes
-for($DELTA=14; $DELTA<=17; $DELTA++) {
-  $cmd = "$bin 0 $DELTA 10";
-  print "$cmd\n";
-  system($cmd);
-}
-
-# Bigger test for plotting
-system("$bin 0 64 50");
 
 $ddir = "p1_data";
 if(!(-d $ddir)) {

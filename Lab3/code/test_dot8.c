@@ -1,5 +1,6 @@
 /* -*- C++ -*- ****************************************************************/
-// gcc -o test_dot test_dot8.c -lrt -lm
+//
+// gcc -O1 -mavx2 test_dot8.c -lrt -lm -o test_dot
 //
 // dot4    -- baseline scalar
 // dot5    -- scalar unrolled by 2
@@ -28,9 +29,11 @@ double CPS = 2.9e9;       // Cycles/sec     -- adjusts
 #define OPTIONS 8                          
 #define IDENT 1.0
 
-#define FILE_PREFIX ((const unsigned char*) "double_dot8_")
+#define STRINGIZE_NX(A) #A
+#define STRINGIZE(A) STRINGIZE_NX(A)
+#define FILE_PREFIX ((const unsigned char*) STRINGIZE(DTYPE)"_dot8_")
 
-typedef double data_t;
+typedef DTYPE data_t;
 
 /* Create abstract data type for vector */
 typedef struct {
@@ -342,8 +345,6 @@ struct timespec diff(struct timespec start, struct timespec end)
 
 //////////////////////////////  End Timing Related //////////////////////////////
 
-#define NEWVEC_ALIGN 32
-
 /**********************************************/
 /* Create vector of specified length */
 vec_ptr new_vec(long int len)
@@ -357,13 +358,14 @@ vec_ptr new_vec(long int len)
 
   /* Allocate and declare array */
   if (len > 0) {
-    data_t *data = (data_t *) calloc(len + NEWVEC_ALIGN/sizeof(data_t) + 1, sizeof(data_t));
-    if (!data) {
+    int err;
+    data_t *data;
+    err = posix_memalign((void **)(&data), VBYTES, ((size_t)len)*sizeof(data_t));
+    if (err) {
 	  free((void *) result);
 	  return NULL;  /* Couldn't allocate storage */
 	}
-    long int remainder = ((long int) data) % NEWVEC_ALIGN;
-	result->data = (data_t *) (((long int)data) + (NEWVEC_ALIGN - remainder));
+	result->data = data;
   }
   else result->data = NULL;
 
@@ -406,7 +408,7 @@ int init_vector(vec_ptr v, long int len)
   else return 0;
 }
 
-/* initialize vector with another */
+/* initialize vector with random numbers */
 int init_vector_rand(vec_ptr v, long int len)
 {
   long int i;

@@ -4,6 +4,8 @@
 
 $myname = "combineBuild";
 
+$vecflags = "-mavx2";
+
 $cwd = `pwd`; chomp $cwd;
 if (!($cwd =~ m|/code$|)) {
   die "$myname: Curdir should be the 'code' directory.\n";
@@ -20,7 +22,7 @@ if(!(-f $src)) {
 }
 
 for $type ("int", "float", "double") {
-  system("gcc -O1 -mavx2 -DDTYPE=$type $src -lrt -lm -o $bin");
+  system("gcc -O1 $vecflags -DDTYPE=$type $src -lrt -lm -o $bin");
   if (!(-x $bin)) {
     die "$myname: No binary $bin, compile error?\n";
   }

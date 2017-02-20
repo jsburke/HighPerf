@@ -1,6 +1,7 @@
 /* -*- C++ -*- ****************************************************************/
-// gcc -O1 -mavx2 test_combine8.c -lrt -lm -o test_combine8
-// 
+//
+// gcc -O1 -mavx2 test_combine8.c -DDTYPE=float -lrt -lm -o test_combine8
+//
 // combine4   -- base scalar code
 // combine6_5 -- unrolled 5 times with 5 accumulators -- best scalar code
 // combine8   -- base vector code
@@ -27,9 +28,10 @@ double CPS = 2.9e9;    // Cycles per second -- Will be recomputed at runtime
 #define IDENT 1.0
 #define OP + 
 
+// "stringize" macro turns a type into a string. For example STRINGIZE(int)
+// gives "int". Thie is from stackoverflow.com/questions/5256313
 #define STRINGIZE_NX(A) #A
 #define STRINGIZE(A) STRINGIZE_NX(A)
-
 #define FILE_PREFIX ((const unsigned char*) (STRINGIZE(DTYPE)"_add_comb8_"))
 
 typedef DTYPE data_t;
@@ -310,8 +312,6 @@ struct timespec diff(struct timespec start, struct timespec end)
 
 //////////////////////////////  End Timing Related //////////////////////////////
 
-#define NEWVEC_ALIGN 32
-
 /**********************************************/
 /* Create vector of specified length */
 vec_ptr new_vec(long int len)
@@ -325,13 +325,14 @@ vec_ptr new_vec(long int len)
 
   /* Allocate and declare array */
   if (len > 0) {
-    data_t *data = (data_t *) calloc(len + NEWVEC_ALIGN/sizeof(data_t) + 1, sizeof(data_t));
-    if (!data) {
+    int err;
+    data_t *data;
+    err = posix_memalign((void **)(&data), VBYTES, ((size_t)len)*sizeof(data_t));
+    if (err) {
 	  free((void *) result);
 	  return NULL;  /* Couldn't allocate storage */
 	}
-    long int remainder = ((long int) data) % NEWVEC_ALIGN;
-	result->data = (data_t *) (((long int)data) + (NEWVEC_ALIGN - remainder));
+	result->data = data;
   }
   else result->data = NULL;
 
