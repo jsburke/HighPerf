@@ -2,19 +2,19 @@
 #
 # Copied from Lab1/scripts/tmbBuild.sh and modified
 
-$myname = "dotBuild";
+$myname = "combineBuild";
 
 $cwd = `pwd`; chomp $cwd;
 if (!($cwd =~ m|/code$|)) {
   die "$myname: Curdir should be the 'code' directory.\n";
 }
 
-$bin = "./td";
+$bin = "./cmb";
 if (-e $bin) {
   unlink($bin);
 }
 
-$src = "test_dot8.c";
+$src = "test_combine8.c";
 if(!(-f $src)) {
   die "$myname: Source file $src not found.\n";
 }

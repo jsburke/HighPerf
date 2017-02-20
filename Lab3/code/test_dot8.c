@@ -149,7 +149,7 @@ int main(int argc, char *argv[])
     set_vec_length(v0,BASE+(i+1)*DELTA);
     set_vec_length(v1,BASE+(i+1)*DELTA);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
-//    dot4(v0, v1, data_holder);
+    dot4(v0, v1, data_holder);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
     time_stamp[OPTION][i] = ts_diff(time1,time2);
   }
@@ -159,7 +159,7 @@ int main(int argc, char *argv[])
     set_vec_length(v0,BASE+(i+1)*DELTA);
     set_vec_length(v1,BASE+(i+1)*DELTA);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
-//    dot5(v0, v1, data_holder);
+    dot5(v0, v1, data_holder);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
     time_stamp[OPTION][i] = ts_diff(time1,time2);
   }
@@ -169,7 +169,7 @@ int main(int argc, char *argv[])
     set_vec_length(v0,BASE+(i+1)*DELTA);
     set_vec_length(v1,BASE+(i+1)*DELTA);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
-//    dot6_2(v0, v1, data_holder);
+    dot6_2(v0, v1, data_holder);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
     time_stamp[OPTION][i] = ts_diff(time1,time2);
   }
@@ -179,7 +179,7 @@ int main(int argc, char *argv[])
     set_vec_length(v0,BASE+(i+1)*DELTA);
     set_vec_length(v1,BASE+(i+1)*DELTA);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
-//    dot6_5(v0, v1, data_holder);
+    dot6_5(v0, v1, data_holder);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
     time_stamp[OPTION][i] = ts_diff(time1,time2);
   }
@@ -189,7 +189,7 @@ int main(int argc, char *argv[])
     set_vec_length(v0,BASE+(i+1)*DELTA);
     set_vec_length(v1,BASE+(i+1)*DELTA);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
-//    dot8(v0, v1, data_holder);
+    dot8(v0, v1, data_holder);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
     time_stamp[OPTION][i] = ts_diff(time1,time2);
   }
@@ -211,7 +211,7 @@ int main(int argc, char *argv[])
     set_vec_length(v0,BASE+(i+1)*DELTA);
     set_vec_length(v1,BASE+(i+1)*DELTA);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
-//    dot8_4(v0, v1, data_holder);
+    dot8_4(v0, v1, data_holder);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
     time_stamp[OPTION][i] = ts_diff(time1,time2);
   }
@@ -221,7 +221,7 @@ int main(int argc, char *argv[])
     set_vec_length(v0,BASE+(i+1)*DELTA);
     set_vec_length(v1,BASE+(i+1)*DELTA);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
-//    dot8_8(v0, v1, data_holder);
+    dot8_8(v0, v1, data_holder);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
     time_stamp[OPTION][i] = ts_diff(time1,time2);
   }
@@ -342,6 +342,8 @@ struct timespec diff(struct timespec start, struct timespec end)
 
 //////////////////////////////  End Timing Related //////////////////////////////
 
+#define NEWVEC_ALIGN 32
+
 /**********************************************/
 /* Create vector of specified length */
 vec_ptr new_vec(long int len)
@@ -355,12 +357,13 @@ vec_ptr new_vec(long int len)
 
   /* Allocate and declare array */
   if (len > 0) {
-    data_t *data = (data_t *) calloc(len, sizeof(data_t));
+    data_t *data = (data_t *) calloc(len + NEWVEC_ALIGN/sizeof(data_t) + 1, sizeof(data_t));
     if (!data) {
 	  free((void *) result);
 	  return NULL;  /* Couldn't allocate storage */
 	}
-	result->data = data;
+    long int remainder = ((long int) data) % NEWVEC_ALIGN;
+	result->data = (data_t *) (((long int)data) + (NEWVEC_ALIGN - remainder));
   }
   else result->data = NULL;
 

@@ -1,12 +1,12 @@
-/*****************************************************************************/
-// gcc -O1 -o test_combine8 test_combine8.c -lrt -lm
+/* -*- C++ -*- ****************************************************************/
+// gcc -O1 -mavx2 test_combine8.c -lrt -lm -o test_combine8
 // 
 // combine4   -- base scalar code
 // combine6_5 -- unrolled 5 times with 5 accumulators -- best scalar code
 // combine8   -- base vector code
-// combine8_2 -- unrolled 2 times with 2 accumulators  NEED TO ADD
+// combine8_2 -- unrolled 2 times with 2 accumulators
 // combine8_4 -- unrolled 4 times with 4 accumulators
-// combine8_8 -- unrolled 8 times with 8 accumulators  NEED TO ADD
+// combine8_8 -- unrolled 8 times with 8 accumulators
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -77,8 +77,8 @@ double measure_cps(void);
 void combine4(vec_ptr v, data_t *dest);
 void combine6_5(vec_ptr v, data_t *dest);
 void combine8(vec_ptr v, data_t *dest);
-void combine8_4(vec_ptr v, data_t *dest);
 void combine8_2(vec_ptr v, data_t *dest);
+void combine8_4(vec_ptr v, data_t *dest);
 void combine8_8(vec_ptr v, data_t *dest);
 
 /*****************************************************************************/
@@ -88,7 +88,7 @@ int main(int argc, char *argv[])
 
   if(argc != 4)
   {
-  	printf("num args wrong\n");
+  	printf("Must give exactly 3 arguments (BASE, DELTA, ITERS)\n");
   	return 0;
   }
 
@@ -168,21 +168,21 @@ int main(int argc, char *argv[])
   for (i = 0; i < ITERS; i++) {
     set_vec_length(v0,BASE+(i+1)*DELTA);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
-    combine8_4(v0, data_holder);
-    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
-    time_stamp[OPTION][i] = ts_diff(time1,time2);
-  }
-
-    OPTION++;
-  for (i = 0; i < ITERS; i++) {
-    set_vec_length(v0,BASE+(i+1)*DELTA);
-    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
     combine8_2(v0, data_holder);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
     time_stamp[OPTION][i] = ts_diff(time1,time2);
   }
 
-    OPTION++;
+  OPTION++;
+  for (i = 0; i < ITERS; i++) {
+    set_vec_length(v0,BASE+(i+1)*DELTA);
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
+    combine8_4(v0, data_holder);
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
+    time_stamp[OPTION][i] = ts_diff(time1,time2);
+  }
+
+  OPTION++;
   for (i = 0; i < ITERS; i++) {
     set_vec_length(v0,BASE+(i+1)*DELTA);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
@@ -198,7 +198,7 @@ int main(int argc, char *argv[])
   ///////////////////////////////////////////////////////
 
   fp = fopen(filename,"w");
-  fprintf(fp,"\nsize, c4, c6_5,  c8,  c8_4, c8_2, c8_8\n");
+  fprintf(fp,"\nsize, c4, c6_5,  c8,  c8_2, c8_4, c8_8\n");
 
   int elements;
   //printf("CPS calculated at: %lf",CPS);
@@ -307,6 +307,8 @@ struct timespec diff(struct timespec start, struct timespec end)
 
 //////////////////////////////  End Timing Related //////////////////////////////
 
+#define NEWVEC_ALIGN 32
+
 /**********************************************/
 /* Create vector of specified length */
 vec_ptr new_vec(long int len)
@@ -320,12 +322,13 @@ vec_ptr new_vec(long int len)
 
   /* Allocate and declare array */
   if (len > 0) {
-    data_t *data = (data_t *) calloc(len, sizeof(data_t));
+    data_t *data = (data_t *) calloc(len + NEWVEC_ALIGN/sizeof(data_t) + 1, sizeof(data_t));
     if (!data) {
 	  free((void *) result);
 	  return NULL;  /* Couldn't allocate storage */
 	}
-	result->data = data;
+    long int remainder = ((long int) data) % NEWVEC_ALIGN;
+	result->data = (data_t *) (((long int)data) + (NEWVEC_ALIGN - remainder));
   }
   else result->data = NULL;
 
@@ -453,7 +456,7 @@ void combine8(vec_ptr v, data_t *dest)
   }
 
   /* Single-step through the remaining elements */
-  while (cnt) {
+  while (cnt > 0) {
     result = result OP *data++;
     cnt--;
   }
@@ -508,7 +511,7 @@ void combine8_4(vec_ptr v, data_t *dest)
   }
 
   /* Single-step through the remaining elements */
-  while (cnt) {
+  while (cnt > 0) {
     result = result OP *data++;
     cnt--;
   }
@@ -564,7 +567,7 @@ void combine8_2(vec_ptr v, data_t *dest)
   }
 
   /* Single-step through the remaining elements */
-  while (cnt) {
+  while (cnt > 0) {
     result = result OP *data++;
     cnt--;
   }
@@ -637,7 +640,7 @@ void combine8_8(vec_ptr v, data_t *dest)
   }
 
   /* Single-step through the remaining elements */
-  while (cnt) {
+  while (cnt > 0) {
     result = result OP *data++;
     cnt--;
   }
