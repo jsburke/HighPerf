@@ -27,9 +27,12 @@ double CPS = 2.9e9;    // Cycles per second -- Will be recomputed at runtime
 #define IDENT 1.0
 #define OP + 
 
-#define FILE_PREFIX ((const unsigned char*) "int_add_comb8_")
+#define STRINGIZE_NX(A) #A
+#define STRINGIZE(A) STRINGIZE_NX(A)
 
-typedef int data_t;
+#define FILE_PREFIX ((const unsigned char*) (STRINGIZE(DTYPE)"_add_comb8_"))
+
+typedef DTYPE data_t;
 
 /* Create abstract data type for vector */
 typedef struct {
