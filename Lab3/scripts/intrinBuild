@@ -1,0 +1,40 @@
+#!/usr/bin/env perl
+#
+# Copied from dotBuild and modified
+
+$myname = "intrinBuild";
+
+$cwd = `pwd`; chomp $cwd;
+if (!($cwd =~ m|/code$|)) {
+  die "$myname: Curdir should be the 'code' directory.\n";
+}
+
+$bin = "./intrin";
+if (-e $bin) {
+  unlink($bin);
+}
+
+$src = "test_intrinsics.c";
+if(!(-f $src)) {
+  die "$myname: Source file $src not found.\n";
+}
+
+$vecflags = "-mavx";
+
+system("gcc -O1 $vecflags $src -lrt -lm -o $bin");
+if (!(-x $bin)) {
+  die "$myname: No binary $bin, compile error?\n";
+}
+
+$ddir = "p1_data";
+if(!(-d $ddir)) {
+  system("mkdir $ddir");
+}
+$ncsv = (`ls *.csv | wc -l`) + 0;
+if ($ncsv > 0) {
+  system("mv *.csv $ddir");
+} else {
+  die "$myname: No .csv output files were produced.\n";
+}
+
+# system("rm $bin");

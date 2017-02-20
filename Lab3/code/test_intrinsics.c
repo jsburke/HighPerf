@@ -1,4 +1,4 @@
-/**************************************************************/
+/* -*- C++ -*- *************************************************/
 // gcc -mavx -O1 -o intrin test_intrinsics.c -lrt -lm
 
 #include <stdio.h>
@@ -33,7 +33,7 @@ double CPS = 2.9e9;       // Cycles/sec     -- adjusts
 
 typedef float data_t;
 
-//float sum_256(__m256 x);
+float sum_256(__m256 x);
 
 void  InitArray(data_t* pA, long int nSize);
 void  InitArray_rand(data_t* pA, long int nSize);
@@ -66,7 +66,7 @@ struct timespec ts_diff(struct timespec start, struct timespec end);
 double measure_cps(void);
 
 /**************************************************************/
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
   int BASE, DELTA, ITERS;
 
@@ -532,7 +532,7 @@ float Test_Dot_128(data_t* pArray1, data_t* pArray2, long int nSize)
 // commenting out for further intrisic tests
 // will evaluate later
 //
-/*float Test_Dot_256(data_t* pArray1, data_t* pArray2, long int nSize)
+float Test_Dot_256(data_t* pArray1, data_t* pArray2, long int nSize)
 { //Sum of products of aligned multiplies, floats
   int i;
   int nLoop = nSize/8;
@@ -559,12 +559,12 @@ float sum_256(__m256 x)
 
   //should cover all corner cases
   //tldr: line and add up each of the 8 in the __MM256
-  const __m128 hiQuad  = _m256_extractf128_ps(x, 1);
-  const __m128 lowQuad = _m256_castps256_ps128(x);
+  const __m128 hiQuad  = _mm256_extractf128_ps(x, 1);
+  const __m128 lowQuad = _mm256_castps256_ps128(x);
   const __m128 sumQuad = _mm_add_ps(lowQuad, hiQuad);
 
   const __m128 lowDual = sumQuad;
-  const __m128 hiDual  = _mm_moveh1_ps(sumQuad, sumQuad);
+  const __m128 hiDual  = _mm_movehl_ps(sumQuad, sumQuad);
   const __m128 sumDual = _mm_add_ps(lowDual, hiDual);
 
   const __m128 low = sumDual;
@@ -572,4 +572,4 @@ float sum_256(__m256 x)
   const __m128 sum = _mm_add_ss(low, hi);
 
   return _mm_cvtss_f32(sum);
-}*/
+}
