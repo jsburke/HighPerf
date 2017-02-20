@@ -25,7 +25,7 @@ double CPS = 2.9e9;       // Cycles/sec     -- adjusts
 // #define DELTA 32
 // #define BASE 0
 
-#define OPTIONS 7
+#define OPTIONS 8
 #define IDENT 1.0
 #define OP *
 
@@ -33,7 +33,7 @@ double CPS = 2.9e9;       // Cycles/sec     -- adjusts
 
 typedef float data_t;
 
-float sum_256(__m256 x);
+//float sum_256(__m256 x);
 
 void  InitArray(data_t* pA, long int nSize);
 void  InitArray_rand(data_t* pA, long int nSize);
@@ -45,6 +45,8 @@ void  Test_Add_128(data_t* pArray1, data_t* pArray2, data_t* pResult, long int n
 void  Test_Add_256(data_t* pArray1, data_t* pArray2, data_t* pResult, long int nSize); // benchmark add
 void  Test_Mul_128(data_t* pArray1, data_t* pArray2, data_t* pResult, long int nSize); // benchmark multiply
 void  Test_Mul_256(data_t* pArray1, data_t* pArray2, data_t* pResult, long int nSize); // benchmark multiply
+
+float Test_Dot_128(data_t* pArray1, data_t* pArray2, long int nSize);  // first dot prod with intrin
 
 ///////////// Timing related  /////////////////////////////////////////
 
@@ -184,6 +186,16 @@ main(int argc, char *argv[])
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
     time_stamp[OPTION][i] = ts_diff(time1,time2);
   }    
+
+  float dot_res = 0;
+
+    OPTION++;
+  for (i = 0; i < ITERS; i++) {
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
+    dot_res = Test_Dot_128(pArray1, pArray2, BASE+(i+1)*DELTA);
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
+    time_stamp[OPTION][i] = ts_diff(time1,time2);
+  }   
 
   ///////////////////////////////////////////////
   //
@@ -517,7 +529,10 @@ float Test_Dot_128(data_t* pArray1, data_t* pArray2, long int nSize)
   return result;
 }
 
-float Test_Dot_256(data_t* pArray1, data_t* pArray2, long int nSize)
+// commenting out for further intrisic tests
+// will evaluate later
+//
+/*float Test_Dot_256(data_t* pArray1, data_t* pArray2, long int nSize)
 { //Sum of products of aligned multiplies, floats
   int i;
   int nLoop = nSize/8;
@@ -557,4 +572,4 @@ float sum_256(__m256 x)
   const __m128 sum = _mm_add_ss(low, hi);
 
   return _mm_cvtss_f32(sum);
-}
+}*/
