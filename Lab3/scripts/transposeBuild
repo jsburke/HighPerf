@@ -1,20 +1,20 @@
 #!/usr/bin/env perl
 #
-# Copied from dotBuild and modified
+# Copied from intrinBuild and modified
 
-$myname = "intrinBuild";
+$myname = "transposeBuild";
 
 $cwd = `pwd`; chomp $cwd;
 if (!($cwd =~ m|/code$|)) {
   die "$myname: Curdir should be the 'code' directory.\n";
 }
 
-$bin = "./intrin";
+$bin = "./tran";
 if (-e $bin) {
   unlink($bin);
 }
 
-$src = "test_intrinsics.c";
+$src = "test_transpose.c";
 if(!(-f $src)) {
   die "$myname: Source file $src not found.\n";
 }
@@ -26,7 +26,9 @@ if (!(-x $bin)) {
   die "$myname: No binary $bin, compile error?\n";
 }
 
-$ddir = "p2_data";
+system("$bin 0 16 10");
+
+$ddir = "p3_data";
 if(!(-d $ddir)) {
   system("mkdir $ddir");
 }
