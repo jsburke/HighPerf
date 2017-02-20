@@ -4,7 +4,7 @@
 
 $myname = "combineBuild";
 
-$vecflags = "-mavx2";
+$vecflags = "-mavx";
 
 $cwd = `pwd`; chomp $cwd;
 if (!($cwd =~ m|/code$|)) {

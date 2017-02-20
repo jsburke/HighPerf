@@ -20,7 +20,7 @@ if(!(-f $src)) {
 }
 
 for $type ("float", "double") {
-  system("gcc -O1 -mavx2 -DDTYPE=$type $src -lrt -lm -o $bin");
+  system("gcc -O1 -mavx -DDTYPE=$type $src -lrt -lm -o $bin");
   if (!(-x $bin)) {
     die "$myname: No binary $bin, compile error?\n";
   }
