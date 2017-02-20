@@ -25,7 +25,7 @@ double CPS = 2.9e9;       // Cycles/sec     -- adjusts
 // #define DELTA 32
 // #define BASE 0
 
-#define OPTIONS 8
+#define OPTIONS 9
 #define IDENT 1.0
 #define OP *
 
@@ -38,15 +38,20 @@ float sum_256(__m256 x);
 void  InitArray(data_t* pA, long int nSize);
 void  InitArray_rand(data_t* pA, long int nSize);
 void  ZeroArray(data_t* pA, long int nSize);
+
+///////////////  Tests ///////////////////////////////
+
 void  ArrayTest1(data_t* pA1, data_t* pA2, data_t* pR, long int nSize);
 void  ArrayTest2(data_t* pA1, data_t* pA2, data_t* pR, long int nSize);
 void  ArrayTest3(data_t* pA1, data_t* pA2, data_t* pR, long int nSize);
+
 void  Test_Add_128(data_t* pArray1, data_t* pArray2, data_t* pResult, long int nSize); // benchmark add
 void  Test_Add_256(data_t* pArray1, data_t* pArray2, data_t* pResult, long int nSize); // benchmark add
 void  Test_Mul_128(data_t* pArray1, data_t* pArray2, data_t* pResult, long int nSize); // benchmark multiply
 void  Test_Mul_256(data_t* pArray1, data_t* pArray2, data_t* pResult, long int nSize); // benchmark multiply
 
 float Test_Dot_128(data_t* pArray1, data_t* pArray2, long int nSize);  // first dot prod with intrin
+float Test_Dot_256(data_t* pArray1, data_t* pArray2, long int nSize);  // second dot prod with intrin
 
 ///////////// Timing related  /////////////////////////////////////////
 
@@ -196,6 +201,18 @@ int main(int argc, char *argv[])
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
     time_stamp[OPTION][i] = ts_diff(time1,time2);
   }   
+
+  printf("%f\n", dot_res);
+
+    OPTION++;
+  for (i = 0; i < ITERS; i++) {
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
+    dot_res = Test_Dot_256(pArray1, pArray2, BASE+(i+1)*DELTA);
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
+    time_stamp[OPTION][i] = ts_diff(time1,time2);
+  }
+
+  printf("%f\n", dot_res);
 
   ///////////////////////////////////////////////
   //
