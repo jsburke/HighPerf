@@ -25,7 +25,7 @@ double CPS = 2.9e9;       // Cycles/sec     -- adjusts
 // #define DELTA 32
 // #define BASE 0
 
-#define OPTIONS 9
+#define OPTIONS 10
 #define IDENT 1.0
 #define OP *
 
@@ -52,6 +52,8 @@ void  Test_Mul_256(data_t* pArray1, data_t* pArray2, data_t* pResult, long int n
 
 float Test_Dot_128(data_t* pArray1, data_t* pArray2, long int nSize);  // first dot prod with intrin
 float Test_Dot_256(data_t* pArray1, data_t* pArray2, long int nSize);  // second dot prod with intrin
+
+float Test_Dot_128_single(data_t* pArray1, data_t* pArray2, long int nSize); // uses intrinsic dp_ps
 
 ///////////// Timing related  /////////////////////////////////////////
 
@@ -202,7 +204,7 @@ int main(int argc, char *argv[])
     time_stamp[OPTION][i] = ts_diff(time1,time2);
   }   
 
-  printf("%f\n", dot_res);
+  //printf("%f\n", dot_res);
 
     OPTION++;
   for (i = 0; i < ITERS; i++) {
@@ -212,7 +214,17 @@ int main(int argc, char *argv[])
     time_stamp[OPTION][i] = ts_diff(time1,time2);
   }
 
-  printf("%f\n", dot_res);
+  //printf("%f\n", dot_res);
+
+    OPTION++;
+  for (i = 0; i < ITERS; i++) {
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
+    dot_res = Test_Dot_128_single(pArray1, pArray2, BASE+(i+1)*DELTA);
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
+    time_stamp[OPTION][i] = ts_diff(time1,time2);
+  }   
+
+  //printf("%f\n", dot_res);  
 
   ///////////////////////////////////////////////
   //
@@ -589,4 +601,30 @@ float sum_256(__m256 x)
   const __m128 sum = _mm_add_ss(low, hi);
 
   return _mm_cvtss_f32(sum);
+}
+
+float Test_Dot_128_single(data_t* pArray1, data_t* pArray2, long int nSize)
+{
+
+  int i;
+  int nLoop = nSize/4;
+  float result;
+
+  __m128* pSrc1 = (__m128*) pArray1;
+  __m128* pSrc2 = (__m128*) pArray2;
+  __m128  m_accum = _mm_set_ps1(0.0f);
+  __m128  m_dotpart;
+
+  for(i = 0; i < nLoop; i++)
+  {
+    m_dotpart = _mm_dp_ps(*pSrc1, *pSrc2, 0xff);
+    m_accum   = _mm_add_ps(m_dotpart, m_accum);    
+
+    pSrc1++;
+    pSrc2++;
+  }
+
+  _mm_store_ss(&result, m_accum);// store the result, don't need hadd because dp covers it
+
+  return result;
 }
