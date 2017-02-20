@@ -1,5 +1,5 @@
 /**************************************************************/
-// gcc -mavx -O1 -o test_intrinsics test_intrinsics.c -lrt -lm
+// gcc -mavx -O1 -o intrin test_intrinsics.c -lrt -lm
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,6 +32,8 @@ double CPS = 2.9e9;       // Cycles/sec     -- adjusts
 #define FILE_PREFIX ((const unsigned char*) "floatMul_intrin_")
 
 typedef float data_t;
+
+float sum_256(__m256 x);
 
 void  InitArray(data_t* pA, long int nSize);
 void  InitArray_rand(data_t* pA, long int nSize);
@@ -523,8 +525,7 @@ float Test_Dot_256(data_t* pArray1, data_t* pArray2, long int nSize)
   __m256* pSrc1 = (__m256*) pArray1;
   __m256* pSrc2 = (__m256*) pArray2;
   __m256  m_mul;
-  __m256  m_accum = _mm_set_ps1(0.0f); // set an accumulator to zero
-                                       // may want to do a _mm256_broadcast_ss(&flt)
+  __m256  m_accum = _mm256_set_ps(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 
   for(i = 0; i < nLoop; i++)
   {
