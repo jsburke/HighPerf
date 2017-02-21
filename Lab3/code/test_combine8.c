@@ -113,6 +113,8 @@ int main(int argc, char *argv[])
   	return 0;
   }
 
+  printf("Vectors contain %ld elements of type %s\n", VSIZE, STRINGIZE(DTYPE));
+
   int OPTION;
 
   struct timespec time1, time2;
