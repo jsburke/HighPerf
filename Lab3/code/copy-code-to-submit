@@ -1,0 +1,9 @@
+#!/bin/sh
+# Copy the source code to the submit directory
+
+cp \
+   test_combine8.c \
+   test_dot8.c \
+   test_intrinsics.c \
+   test_transpose.c \
+   ../submit/code
