@@ -26,7 +26,7 @@ if (!(-x $bin)) {
   die "$myname: No binary $bin, compile error?\n";
 }
 
-system("$bin 0 16 50");
+system("$bin 0 8 100");
 
 $ddir = "p3_data";
 if(!(-d $ddir)) {

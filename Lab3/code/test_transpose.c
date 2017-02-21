@@ -171,9 +171,9 @@ int main(int argc, char *argv[])
     set_array_size(v0,BASE+(i+1)*DELTA);
     set_array_size(v1,BASE+(i+1)*DELTA);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
-     array_print(v0);
+    // array_print(v0);
     xpose_intrin(v0, v1);
-     array_print(v1);
+    // array_print(v1);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
     time_stamp[OPTION][i] = diff(time1,time2);
   }
@@ -182,7 +182,7 @@ int main(int argc, char *argv[])
   /* output times */
   long int size, elements;
   fp = fopen(filename,"w");
-  fprintf(fp, "size,   ij,   ji,  ij_blk\n");
+  fprintf(fp, "size,   ij,   ji,  ij_blk, intrinsics\n");
   for (i = 0; i < ITERS; i++) {
   	size = BASE+(i+1)*DELTA;
     elements = size * size;
@@ -412,20 +412,27 @@ void xpose_blocked(vec_ptr src, vec_ptr dst)
 
 // Sources:
 //   software.intel.com/sites/landingpage/IntrinsicsGuide
+// Some other types of SIMD transpose operations are at:
 //   stackoverflow.com/questions/16941098
 //     (shows an 8x8 transpose for floats)
 //   www.randombit.net/bitbashing/2009/10/08/integer_matrix_transpose_in_sse2.html
+// but I created this 4x4 double transpose myself.
 inline void transpose4_pd(__m256d *r0, __m256d *r1, __m256d *r2, __m256d *r3)
 {
-  __m256d _t0, _t1, _t2, _t3;
-  _t0 = _mm256_unpacklo_pd(*r0, *r1);
-  _t1 = _mm256_unpacklo_pd(*r2, *r3);
-  _t2 = _mm256_unpackhi_pd(*r0, *r1);
-  _t3 = _mm256_unpackhi_pd(*r2, *r3);
-  *r0 = _mm256_shuffle_pd(_t0, _t1, _MM_SHUFFLE(1,0,1,0));
-  *r1 = _mm256_shuffle_pd(_t0, _t1, _MM_SHUFFLE(3,2,3,2));
-  *r2 = _mm256_shuffle_pd(_t2, _t3, _MM_SHUFFLE(1,0,1,0));
-  *r3 = _mm256_shuffle_pd(_t2, _t3, _MM_SHUFFLE(3,2,3,2));
+  __m256d _t0, _t1, _t2, _t3;                   //  0  1  2  3
+                                                //  4  5  6  7
+                                                //  8  9 10 11
+                                                // 12 13 14 15
+
+  _t0 = _mm256_unpacklo_pd(*r0, *r1);           //  0  4  2  6
+  _t1 = _mm256_unpacklo_pd(*r2, *r3);           //  8 12 10 15
+  _t2 = _mm256_unpackhi_pd(*r0, *r1);           //  1  5  3  7
+  _t3 = _mm256_unpackhi_pd(*r2, *r3);           //  9 13 11 15
+
+  *r0 = _mm256_permute2f128_pd(_t0, _t1, 0x20); //  0  4  8 12
+  *r1 = _mm256_permute2f128_pd(_t2, _t3, 0x20); //  1  5  9 13
+  *r2 = _mm256_permute2f128_pd(_t0, _t1, 0x31); //  2  6 10 14
+  *r3 = _mm256_permute2f128_pd(_t2, _t3, 0x31); //  3  7 11 15
 }
 
 void xpose_intrin(vec_ptr src, vec_ptr dst)

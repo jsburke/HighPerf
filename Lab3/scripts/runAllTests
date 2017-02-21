@@ -53,4 +53,4 @@ if (!($cwd =~ m|/code$|)) {
 
 # transpose
 &runscr("../scripts/transposeBuild");
-&showfile("p3_data/double_transpose_B0_D16_I50.csv");
+&showfile("p3_data/double_transpose_B0_D8_I100.csv");
