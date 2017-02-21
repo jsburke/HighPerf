@@ -27,6 +27,7 @@ sub showfile
   $d2 = &path_mtime($ofile);
   die "outpot $ofile not updated by $g_scr!\n" if ($d2 < $g_d1);
   print "--- $ofile\n";
+  system("head -1 $ofile");
   system("tail -5 $ofile");
 }
 
