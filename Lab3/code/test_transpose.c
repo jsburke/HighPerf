@@ -1,12 +1,15 @@
 /* -*- C++ -*- ****************************************************************/
 //
-// gcc -O1 test_transpose.c -lrt -o tran
+// gcc -O1 -mavx test_transpose.c -lrt -lm -o tran
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <time.h>
 #include <math.h>
+#include <xmmintrin.h>
+#include <smmintrin.h>
+#include <immintrin.h>  
 
 double CPS = 2.9e9;       // Cycles/sec - adjusted by measure_cps()
 
@@ -18,7 +21,7 @@ double CPS = 2.9e9;       // Cycles/sec - adjusted by measure_cps()
 #define BBASE 16
 #define BITERS 5
 
-#define OPTIONS 2       // ij and ji -- need to add other methods
+#define OPTIONS 4       // ij and ji -- need to add other methods
 
 #define FILE_PREFIX ((const unsigned char*) "double_transpose_")
 
@@ -26,7 +29,7 @@ typedef double data_t;
 
 /* Create abstract data type for vector */
 typedef struct {
-  long int len;
+  long int size;
   data_t *data;
 } vec_rec, *vec_ptr;
 
@@ -43,9 +46,10 @@ typedef union {
 } pack_t;
 
 vec_ptr new_array(long int size);
-int set_vec_length(vec_ptr v, long int index);
-long int get_vec_length(vec_ptr v);
+int set_array_size(vec_ptr v, long int index);
+long int get_array_size(vec_ptr v);
 int init_array(vec_ptr v, long int size);
+data_t *get_array_buffer(vec_ptr v);
 data_t *data_holder;
 
 /////////////// Timing related  ///////////////////////////////////////////////
@@ -67,8 +71,11 @@ double measure_cps(void);
 
 //////////////  transpose prototypes  /////////////////////////////////////////
 
+void array_print(vec_ptr v0);
 void transpose(vec_ptr v0, vec_ptr v1);
 void transpose_rev(vec_ptr v0, vec_ptr v1);
+void xpose_blocked(vec_ptr v0, vec_ptr v1);
+void xpose_intrin(vec_ptr src, vec_ptr dst);
 
 /*****************************************************************************/
 int main(int argc, char *argv[])
@@ -125,28 +132,57 @@ int main(int argc, char *argv[])
 
   OPTION = 0;
   for (i = 0; i < ITERS; i++) {
-    set_vec_length(v0,BASE+(i+1)*DELTA);
-    set_vec_length(v1,BASE+(i+1)*DELTA);
+    set_array_size(v0,BASE+(i+1)*DELTA);
+    set_array_size(v1,BASE+(i+1)*DELTA);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
+    // array_print(v0);
     transpose(v0, v1);
+    // array_print(v1);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
     time_stamp[OPTION][i] = diff(time1,time2);
   }
 
   OPTION++;
   for (i = 0; i < ITERS; i++) {
-    set_vec_length(v0,BASE+(i+1)*DELTA);
-    set_vec_length(v1,BASE+(i+1)*DELTA);
+    set_array_size(v0,BASE+(i+1)*DELTA);
+    set_array_size(v1,BASE+(i+1)*DELTA);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
+    // array_print(v0);
     transpose_rev(v0, v1);
+    // array_print(v1);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
     time_stamp[OPTION][i] = diff(time1,time2);
   }
 
+  OPTION++;
+  for (i = 0; i < ITERS; i++) {
+    set_array_size(v0,BASE+(i+1)*DELTA);
+    set_array_size(v1,BASE+(i+1)*DELTA);
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
+    // array_print(v0);
+    xpose_blocked(v0, v1);
+    // array_print(v1);
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
+    time_stamp[OPTION][i] = diff(time1,time2);
+  }
+
+  OPTION++;
+  for (i = 0; i < ITERS; i++) {
+    set_array_size(v0,BASE+(i+1)*DELTA);
+    set_array_size(v1,BASE+(i+1)*DELTA);
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
+     array_print(v0);
+    xpose_intrin(v0, v1);
+     array_print(v1);
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
+    time_stamp[OPTION][i] = diff(time1,time2);
+  }
+
+
   /* output times */
   long int size, elements;
   fp = fopen(filename,"w");
-  fprintf(fp, "size,   ij,   ji\n");
+  fprintf(fp, "size,   ij,   ji,  ij_blk\n");
   for (i = 0; i < ITERS; i++) {
   	size = BASE+(i+1)*DELTA;
     elements = size * size;
@@ -174,7 +210,7 @@ vec_ptr new_array(long int size)
   /* Allocate and declare header structure */
   vec_ptr result = (vec_ptr) malloc(sizeof(vec_rec));
   if (!result) return NULL;  /* Couldn't allocate storage */
-  result->len = size;
+  result->size = size;
 
   /* Allocate and declare array */
   if (size > 0) {
@@ -194,16 +230,16 @@ vec_ptr new_array(long int size)
 }
 
 /* Set length of vector */
-int set_vec_length(vec_ptr v, long int index)
+int set_array_size(vec_ptr v, long int index)
 {
-  v->len = index;
+  v->size = index;
   return 1;
 }
 
 /* Return length of vector */
-long int get_vec_length(vec_ptr v)
+long int get_array_size(vec_ptr v)
 {
-  return v->len;
+  return v->size;
 }
 
 /* initialize 2D vector */
@@ -212,7 +248,7 @@ int init_array(vec_ptr v, long int size)
   long int i;
 
   if (size > 0) {
-    v->len = size;
+    v->size = size;
     for (i = 0; i < size*size; i++)
       v->data[i] = (data_t)(i);
     return 1;
@@ -220,7 +256,7 @@ int init_array(vec_ptr v, long int size)
   else return 0;
 }
 
-data_t *get_vec_start(vec_ptr v)
+data_t *get_array_buffer(vec_ptr v)
 {
   return v->data;
 }
@@ -315,32 +351,106 @@ struct timespec diff(struct timespec start, struct timespec end)
 
 /************************************/
 
-/* transpose */
-void transpose(vec_ptr v0, vec_ptr v1)
+void array_print(vec_ptr v0)
 {
-  long int i, j;
-  long int get_vec_length(vec_ptr v);
-  data_t *get_vec_start(vec_ptr v);
-  long int length = get_vec_length(v0);
-  data_t *data0 = get_vec_start(v0);
-  data_t *data1 = get_vec_start(v1);
+  long int row, col;
+  long int size = get_array_size(v0);
+  data_t *data0 = get_array_buffer(v0);
 
-  for (i = 0; i < length; i++)
-    for (j = 0; j < length; j++)
-      data1[j*length+i] = data0[i*length+j];
+  for (row = 0; row < size; row++) {
+    for (col = 0; col < size; col++) {
+      printf("%4.0f ", data0[row*size+col]);
+    }
+    printf("\n");
+  }
 }
 
 /* transpose */
-void transpose_rev(vec_ptr v0, vec_ptr v1)
+void transpose(vec_ptr src, vec_ptr dst)
 {
   long int i, j;
-  long int get_vec_length(vec_ptr v);
-  data_t *get_vec_start(vec_ptr v);
-  long int length = get_vec_length(v0);
-  data_t *data0 = get_vec_start(v0);
-  data_t *data1 = get_vec_start(v1);
+  long int length = get_array_size(src);
+  data_t *src_dat = get_array_buffer(src);
+  data_t *dst_dat = get_array_buffer(dst);
 
   for (i = 0; i < length; i++)
     for (j = 0; j < length; j++)
-      data1[i*length+j] = data0[j*length+i];
+      dst_dat[j*length+i] = src_dat[i*length+j];
+}
+
+/* transpose */
+void transpose_rev(vec_ptr src, vec_ptr dst)
+{
+  long int i, j;
+  long int length = get_array_size(src);
+  data_t *src_dat = get_array_buffer(src);
+  data_t *dst_dat = get_array_buffer(dst);
+
+  for (i = 0; i < length; i++)
+    for (j = 0; j < length; j++)
+      dst_dat[i*length+j] = src_dat[j*length+i];
+}
+
+void xpose_blocked(vec_ptr src, vec_ptr dst)
+{
+  long int i, j;
+  long int ib, jb;
+  long int length = get_array_size(src);
+  data_t *src_dat = get_array_buffer(src);
+  data_t *dst_dat = get_array_buffer(dst);
+
+  for (ib = 0; ib < length; ib+=4) {
+    for (jb = 0; jb < length; jb+=4) {
+      for (i = 0; i < 4; i++) {
+        for (j = 0; j < 4; j++) {
+          dst_dat[(jb+j)*length+(ib+i)] = src_dat[(ib+i)*length+(jb+j)];
+        }
+      }
+    }
+  }
+}
+
+// Sources:
+//   software.intel.com/sites/landingpage/IntrinsicsGuide
+//   stackoverflow.com/questions/16941098
+//     (shows an 8x8 transpose for floats)
+//   www.randombit.net/bitbashing/2009/10/08/integer_matrix_transpose_in_sse2.html
+inline void transpose4_pd(__m256d *r0, __m256d *r1, __m256d *r2, __m256d *r3)
+{
+  __m256d _t0, _t1, _t2, _t3;
+  _t0 = _mm256_unpacklo_pd(*r0, *r1);
+  _t1 = _mm256_unpacklo_pd(*r2, *r3);
+  _t2 = _mm256_unpackhi_pd(*r0, *r1);
+  _t3 = _mm256_unpackhi_pd(*r2, *r3);
+  *r0 = _mm256_shuffle_pd(_t0, _t1, _MM_SHUFFLE(1,0,1,0));
+  *r1 = _mm256_shuffle_pd(_t0, _t1, _MM_SHUFFLE(3,2,3,2));
+  *r2 = _mm256_shuffle_pd(_t2, _t3, _MM_SHUFFLE(1,0,1,0));
+  *r3 = _mm256_shuffle_pd(_t2, _t3, _MM_SHUFFLE(3,2,3,2));
+}
+
+void xpose_intrin(vec_ptr src, vec_ptr dst)
+{
+  long int rblk, cblk;
+  long int ri, ci;
+  long int length = get_array_size(src);
+  long int l4 = length / 4;
+  data_t *src_dat = get_array_buffer(src);
+  data_t *dst_dat = get_array_buffer(dst);
+  __m256d* pSrc   = (__m256d*) src_dat;
+  __m256d* pDst   = (__m256d*) dst_dat;
+  __m256d r0, r1, r2, r3;
+
+  for (rblk = 0; rblk < length; rblk+=4) {
+    for (cblk = 0; cblk < length; cblk+=4) {
+      r0 = pSrc[(rblk+0)*l4+(cblk/4)];
+      r1 = pSrc[(rblk+1)*l4+(cblk/4)];
+      r2 = pSrc[(rblk+2)*l4+(cblk/4)];
+      r3 = pSrc[(rblk+3)*l4+(cblk/4)];
+      transpose4_pd(&r0, &r1, &r2, &r3);
+      pDst[(cblk+0)*l4+(rblk/4)] = r0;
+      pDst[(cblk+1)*l4+(rblk/4)] = r1;
+      pDst[(cblk+2)*l4+(rblk/4)] = r2;
+      pDst[(cblk+3)*l4+(rblk/4)] = r3;
+    }
+  }
 }
