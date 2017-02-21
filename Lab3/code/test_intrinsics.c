@@ -162,8 +162,8 @@ int main(int argc, char *argv[])
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
     time_stamp[OPTION][i] = ts_diff(time1,time2);
   }
-
-    OPTION++;
+  
+  OPTION++;
   for (i = 0; i < ITERS; i++) {
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
     Test_Add_128(pArray1, pArray2, pResult, BASE+(i+1)*DELTA);
@@ -194,10 +194,11 @@ int main(int argc, char *argv[])
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
     time_stamp[OPTION][i] = ts_diff(time1,time2);
   }    
+  
 
-  float dot_res = 0;
 
     OPTION++;
+    float dot_res = 0;
   for (i = 0; i < ITERS; i++) {
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
     dot_res = Test_Dot_128(pArray1, pArray2, BASE+(i+1)*DELTA);
@@ -236,7 +237,7 @@ int main(int argc, char *argv[])
   }   
 
   printf("%f\n", dot_res);  
-
+  
   ///////////////////////////////////////////////
   //
   //  Write to file
@@ -244,7 +245,7 @@ int main(int argc, char *argv[])
   ///////////////////////////////////////////////
 
   fp = fopen(filename,"w");
-  fprintf(fp,"size, Test 1, Test 2, Test 3, Test Add 128, Test Add 256, Test Mul 128, Test Mul 256, dot 128, dot 256, dp 128, dp 256\n");  
+  fprintf(fp,"size, test1, test2, tes3, add 128, add 256, mul 128, mul 256 dot 128, dot 256, dp intrin 128, dp intrin 256\n");  
 
   int elements;
 
@@ -580,7 +581,7 @@ float Test_Dot_256(data_t* pArray1, data_t* pArray2, long int nSize)
   __m256* pSrc1 = (__m256*) pArray1;
   __m256* pSrc2 = (__m256*) pArray2;
   __m256  m_mul;
-  __m256  m_accum = _mm256_set_ps(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+  __m256  m_accum = _mm256_set1_ps(0.0f);//, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 
   for(i = 0; i < nLoop; i++)
   {
@@ -649,7 +650,7 @@ float Test_Dot_256_single(data_t* pArray1, data_t* pArray2, long int nSize)
 
   __m256* pSrc1   = (__m256*) pArray1;
   __m256* pSrc2   = (__m256*) pArray2;
-  __m256  m_accum = _mm256_set_ps(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+  __m256  m_accum = _mm256_set1_ps(0.0f);//, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
   __m256  m_dotpart;
 
   for(i = 0; i < nLoop; i++)
