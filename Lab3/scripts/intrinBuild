@@ -26,6 +26,9 @@ if (!(-x $bin)) {
   die "$myname: No binary $bin, compile error?\n";
 }
 
+# Generate benchmark/performance data
+system("$bin 0 64 50");
+
 $ddir = "p2_data";
 if(!(-d $ddir)) {
   system("mkdir $ddir");

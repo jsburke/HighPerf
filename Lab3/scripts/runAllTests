@@ -38,6 +38,7 @@ if (!($cwd =~ m|/code$|)) {
 
 # combine tests
 &runscr("../scripts/combineBuild");
+&showfile("p1_data/int_add_comb8_B0_D64_I50.csv");
 &showfile("p1_data/float_add_comb8_B0_D64_I50.csv");
 &showfile("p1_data/double_add_comb8_B0_D64_I50.csv");
 
@@ -46,3 +47,6 @@ if (!($cwd =~ m|/code$|)) {
 &showfile("p1_data/float_dot8_B0_D64_I50.csv");
 &showfile("p1_data/double_dot8_B0_D64_I50.csv");
 
+# intrinsics
+&runscr("../scripts/intrinBuild");
+&showfile("p2_data/floatMul_intrin_B0_D64_I50.csv");
