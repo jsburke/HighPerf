@@ -428,6 +428,8 @@ void xpose_blocked(vec_ptr src, vec_ptr dst)
 //   stackoverflow.com/questions/16941098
 //     (shows an 8x8 transpose for floats)
 //   www.randombit.net/bitbashing/2009/10/08/integer_matrix_transpose_in_sse2.html
+//   stackoverflow.com/questions/13422747/reverse-a-avx-register-containing-doubles-using-a-single-avx-intrinsic
+//
 // but I created this 4x4 double transpose myself.
 //
 // GCC won't let me use '&' for arguments passed by reference
