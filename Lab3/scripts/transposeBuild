@@ -39,4 +39,4 @@ if ($ncsv > 0) {
   die "$myname: No .csv output files were produced.\n";
 }
 
-# system("rm $bin");
+system("rm $bin");

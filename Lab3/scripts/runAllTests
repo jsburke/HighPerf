@@ -50,3 +50,7 @@ if (!($cwd =~ m|/code$|)) {
 # intrinsics
 &runscr("../scripts/intrinBuild");
 &showfile("p2_data/floatMul_intrin_B0_D64_I50.csv");
+
+# transpose
+&runscr("../scripts/transposeBuild");
+&showfile("p3_data/double_transpose_B0_D16_I50.csv");
