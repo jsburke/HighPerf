@@ -21,7 +21,7 @@ double CPS = 2.9e9;       // Cycles/sec - adjusted by measure_cps()
 #define BBASE 16
 #define BITERS 5
 
-#define OPTIONS 4       // ij and ji -- need to add other methods
+#define OPTIONS 5       // ij and ji -- need to add other methods
 
 #define FILE_PREFIX ((const unsigned char*) "double_transpose_")
 
@@ -76,6 +76,7 @@ void transpose(vec_ptr v0, vec_ptr v1);
 void transpose_rev(vec_ptr v0, vec_ptr v1);
 void xpose_blocked(vec_ptr v0, vec_ptr v1);
 void xpose_intrin(vec_ptr src, vec_ptr dst);
+void xpose_intrin2(vec_ptr src, vec_ptr dst);
 
 /*****************************************************************************/
 int main(int argc, char *argv[])
@@ -178,11 +179,22 @@ int main(int argc, char *argv[])
     time_stamp[OPTION][i] = diff(time1,time2);
   }
 
+  OPTION++;
+  for (i = 0; i < ITERS; i++) {
+    set_array_size(v0,BASE+(i+1)*DELTA);
+    set_array_size(v1,BASE+(i+1)*DELTA);
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
+    // array_print(v0);
+    xpose_intrin2(v0, v1);
+    // array_print(v1);
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
+    time_stamp[OPTION][i] = diff(time1,time2);
+  }
 
   /* output times */
   long int size, elements;
   fp = fopen(filename,"w");
-  fprintf(fp, "size,   ij,   ji,  ij_blk, intrinsics\n");
+  fprintf(fp, "size,   ij,        ji,     ij_blk,   intrins,   intr2\n");
   for (i = 0; i < ITERS; i++) {
   	size = BASE+(i+1)*DELTA;
     elements = size * size;
@@ -417,6 +429,8 @@ void xpose_blocked(vec_ptr src, vec_ptr dst)
 //     (shows an 8x8 transpose for floats)
 //   www.randombit.net/bitbashing/2009/10/08/integer_matrix_transpose_in_sse2.html
 // but I created this 4x4 double transpose myself.
+//
+// GCC won't let me use '&' for arguments passed by reference
 inline void transpose4_pd(__m256d *r0, __m256d *r1, __m256d *r2, __m256d *r3)
 {
   __m256d _t0, _t1, _t2, _t3;                   //  0  1  2  3
@@ -461,3 +475,43 @@ void xpose_intrin(vec_ptr src, vec_ptr dst)
     }
   }
 }
+
+// This is an attempt to substitute the inline function with an equivalent
+// macro.
+#define xp4pd(s0, s1, s2, s3, t0, t1, t2, t3, d0, d1, d2, d3) \
+  t0 = _mm256_unpacklo_pd(s0, s1); \
+  t1 = _mm256_unpacklo_pd(s2, s3); \
+  t2 = _mm256_unpackhi_pd(s0, s1); \
+  t3 = _mm256_unpackhi_pd(s2, s3); \
+  d0 = _mm256_permute2f128_pd(t0, t1, 0x20); \
+  d1 = _mm256_permute2f128_pd(t2, t3, 0x20); \
+  d2 = _mm256_permute2f128_pd(t0, t1, 0x31); \
+  d3 = _mm256_permute2f128_pd(t2, t3, 0x31);
+
+void xpose_intrin2(vec_ptr src, vec_ptr dst)
+{
+  long int rblk, cblk;
+  long int ri, ci;
+  long int length = get_array_size(src);
+  long int l4 = length / 4;
+  data_t *src_dat = get_array_buffer(src);
+  data_t *dst_dat = get_array_buffer(dst);
+  __m256d* pSrc   = (__m256d*) src_dat;
+  __m256d* pDst   = (__m256d*) dst_dat;
+  __m256d *ps0, *ps1, *ps2, *ps3;
+  __m256d *pd0, *pd1, *pd2, *pd3;
+  __m256d t0, t1, t2, t3;
+
+  for (rblk = 0; rblk < length; rblk+=4) {
+    ps0 = pSrc + rblk*l4;      pd0 = pDst + rblk/4;
+    ps1 = ps0 + l4;            pd1 = pd0 + l4;
+    ps2 = ps1 + l4;            pd2 = pd1 + l4;
+    ps3 = ps2 + l4;            pd3 = pd2 + l4;
+    for (cblk = 0; cblk < length; cblk+=4) {
+      xp4pd(*ps0, *ps1, *ps2, *ps3, t0, t1, t2, t3, *pd0, *pd1, *pd2, *pd3);
+      ps0++; ps1++; ps2++; ps3++;
+      pd0+=length; pd1+=length; pd2+=length; pd3+=length;
+    }
+  }
+}
+
