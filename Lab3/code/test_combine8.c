@@ -26,13 +26,13 @@ double CPS = 2.9e9;    // Cycles per second -- Will be recomputed at runtime
 
 #define OPTIONS 6      // NEED TO MODIFY
 #define IDENT 1.0
-#define OP * 
+#define OP + 
 
 // "stringize" macro turns a type into a string. For example STRINGIZE(int)
 // gives "int". Thie is from stackoverflow.com/questions/5256313
 #define STRINGIZE_NX(A) #A
 #define STRINGIZE(A) STRINGIZE_NX(A)
-#define FILE_PREFIX ((const unsigned char*) (STRINGIZE(DTYPE)"_mul_comb8_"))
+#define FILE_PREFIX ((const unsigned char*) (STRINGIZE(DTYPE)"_add_comb8_"))
 
 typedef DTYPE data_t;
 
@@ -203,7 +203,7 @@ int main(int argc, char *argv[])
   ///////////////////////////////////////////////////////
 
   fp = fopen(filename,"w");
-  fprintf(fp,"\nsize, c4, c6_5,  c8,  c8_2, c8_4, c8_8\n");
+  fprintf(fp,"size, c4, c6_5,  c8,  c8_2, c8_4, c8_8\n");
 
   int elements;
   //printf("CPS calculated at: %lf",CPS);
