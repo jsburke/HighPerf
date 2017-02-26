@@ -30,7 +30,7 @@ void *PrintHello(void *threadarg)
 
   //print some thread-specific stuff, then wait for everybody else
   for (i = 0; i < 3; i++) {
-    //    sleep(1);
+    sleep(taskid);
     printf("Thread %ld printing before barrier %ld of 3\n", taskid, i+1);
   }
 
