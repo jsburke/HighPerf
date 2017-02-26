@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <pthread.h>
 
-#define NUM_THREADS 7
+#define NUM_THREADS 8
 
 struct thread_data{
   int thread_id;
@@ -65,6 +65,13 @@ void *PrintHello(void *threadarg)
     pthread_mutex_lock(&mutexA[6]);
     pthread_mutex_unlock(&mutexA[6]);
     break;
+  case 8:
+    printf("\nIt's me, thread #%ld! I'm waiting for 6 and 7 ...", taskid);
+    pthread_mutex_lock(&mutexA[7]);
+    pthread_mutex_unlock(&mutexA[7]); // putting 7 first lets them all unlock
+    pthread_mutex_lock(&mutexA[6]);   // 8 can block 7 on 6 otherwise and it gets stuck
+    pthread_mutex_unlock(&mutexA[6]);
+  break;
   default:
     printf("\nIt's me, thread #%ld! I'm waiting ...", taskid);
     break;
@@ -93,7 +100,8 @@ int main(int argc, char *argv[])
 				 "Fourth Message",
 				 "Fifth Message",
 				 "Sixth Message",
-				 "Seventh Message"};
+				 "Seventh Message",
+         "Eighth Message"};
   char dummy[1];
 
   for (i = 0; i <= NUM_THREADS; i++) {
