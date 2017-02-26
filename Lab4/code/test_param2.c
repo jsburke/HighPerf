@@ -8,6 +8,11 @@
 #include <time.h>
 
 #define NUM_THREADS 10
+#define BUSY 100
+#define USE_PTHREAD_EXIT
+
+//above define forces main to wait for all threads to complete because of pthread_exit
+//commenting it out will sometimes allow for a few to go, but not all of them
 
 /********************/
 void *work(void *i)
@@ -16,8 +21,10 @@ void *work(void *i)
   int f = *((int*)(i));  // get the value being pointed to
   int *g = (int*)(i);    // get the pointer itself
 
-  for (j; j < 10000000; j++) k += j;  // busy work
-  //sleep(3); //not the right way to stop threads from getting created
+  long unsigned int wait = BUSY*BUSY*BUSY;
+
+  for (j; j < wait; j++) k += j;  // busy work
+  //sleep(1);   //not the right way to stop threads from getting created
               //should probably manipulate join??  tired
   f += 2;  // since this value exists in main's stack and we modify here
   g += 3;  // this modification changes all threads
@@ -25,7 +32,7 @@ void *work(void *i)
            // g is equal across all threads since they all refer to the same address plus an offset
 
   // printf("\nHello World from %lu with value %d\n", pthread_self(), f);
-  printf("\nHello World! %d  %d",  f, *g);
+  printf("Hello World! %d  %d\n",  f, *g);
 
   pthread_exit(NULL);
 }
@@ -43,10 +50,14 @@ int main(int argc, char *argv[])
     }
   }
 
-  for (j; j < 100000000; j++) k += j;  // busy work
+  //for (j; j < BUSY; j++) k += j;  // busy work
 
   printf("\nAfter creating the thread.  My id is %lu, i = %d\n",
 	 pthread_self(), i);
+
+  #ifdef USE_PTHREAD_EXIT
+    pthread_exit(0);
+  #endif
 
   return(0);
 
