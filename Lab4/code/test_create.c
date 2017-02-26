@@ -22,7 +22,9 @@ void *work(void *i)
 int main(int argc, char *argv[])
 {
   int arg,i,j,k,m;   	              /* Local variables. */
-  pthread_t id[NUM_THREADS];
+  //pthread_t id[NUM_THREADS];
+
+  pthread_t* id = (pthread_t*) malloc(sizeof(pthread_t)*NUM_THREADS);
 
   for (i = 0; i < NUM_THREADS; ++i) {
     if (pthread_create(&id[i], NULL, work, NULL)) {
