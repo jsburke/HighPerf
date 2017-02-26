@@ -10,6 +10,8 @@
 /************************************************************************/
 void *PrintHello(void *threadid)
 {
+  printf(" Task 7: value before casting %p\n", threadid);  //all numbers are the same, but printed in hex
+
   long unsigned int tid = (long unsigned int) threadid;
   
   printf(" Hello World!  It's me, thread # %lx ! \n", tid);
@@ -24,6 +26,8 @@ int main(int argc, char *argv[])
   pthread_t threads[NUM_THREADS];
   int rc;
   long unsigned int t;
+  char no_bueno = -5;   // when we pass this where t is, compile fails
+                        // reason being is a char/int is a different size from a pointer
 
   printf("\n Hello World!  It's me, MAIN!\n");
 
