@@ -6,12 +6,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <time.h>
 
 #define NUM_THREADS 5
+void sleep(int time);
 
 /*************************************************************************/
 void *work(void *i)
 {
+  sleep(3);   // Main prints its id, spawned threads print their ids, main exits
   printf(" Hello World!  It's me, thread #%lu --\n",
 	 pthread_self());
   pthread_exit(NULL);
