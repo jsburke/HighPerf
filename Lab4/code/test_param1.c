@@ -7,6 +7,16 @@
 
 #define NUM_THREADS 5
 
+//NB task 8
+//
+//only thing that noticeably changes from runs is different print orders
+//creation prints always in numerical order
+// task 7 - hello pairs always in set print order
+// threads print statements can interleave to some degree
+// good bye can come before final thread prints
+//
+// locked in by pthread_exit???
+
 /************************************************************************/
 void *PrintHello(void *threadid)
 {
