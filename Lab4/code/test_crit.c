@@ -8,6 +8,8 @@
 
 #define NUM_THREADS 100
 
+pthread_mutex_t mt;
+
 struct thread_data{
   int thread_id;
   int *balance;
@@ -34,8 +36,10 @@ void *PrintHello(void *threadarg)
   t1.tv_sec  = 0;      // would use sleep() ...
   t1.tv_nsec = 10000;
 
+  pthread_mutex_lock(&mt);
   if (taskid % 2 == 0) *balance += 1;
   else {slp = nanosleep(&t1,NULL); *balance -= 1;}
+  pthread_mutex_unlock(&mt);
 
   printf(" It's me, thread #%ld! balance = %d\n", taskid, *balance);
 
@@ -52,6 +56,7 @@ int main(int argc, char *argv[])
   long t;
   int account = 1000;
 
+  pthread_mutex_init(&mt,NULL);
   printf("\n Hello World!  It's me, MAIN!\n");
 
   for (t = 0; t < NUM_THREADS; t++) {
@@ -71,6 +76,7 @@ int main(int argc, char *argv[])
     }
   }
 
+  pthread_mutex_destroy(&mt);
   printf("\n MAIN --> balance = %d\n", account); 
 
   pthread_exit(NULL);
