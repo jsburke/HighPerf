@@ -37,6 +37,12 @@ int main()
   printf("the_data now points to the character %c\n", *(char*) the_data);
 
   // use "the_data" to print out the contents of ArrayA
+  the_data = &ArrayA;
+  for (i = 0; i < 3; i++)
+  {
+    printf("the_data now points to the float value %lf\n", *((float*) the_data+i));
+    //  doing it this way does the cast, then pointer arith, then dereference
+  }
 
   return 0;
 }
