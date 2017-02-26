@@ -5,6 +5,7 @@
 #include <stdlib.h>
 
 #include <pthread.h>
+#include <time.h>
 
 #define NUM_THREADS 10
 
@@ -16,6 +17,12 @@ void *work(void *i)
   int *g = (int*)(i);    // get the pointer itself
 
   for (j; j < 10000000; j++) k += j;  // busy work
+  //sleep(3); //not the right way to stop threads from getting created
+              //should probably manipulate join??  tired
+  f += 2;  // since this value exists in main's stack and we modify here
+  g += 3;  // this modification changes all threads
+           // f quickly becomes 12 for all since main.i is 10 at the end of all issues
+           // g is equal across all threads since they all refer to the same address plus an offset
 
   // printf("\nHello World from %lu with value %d\n", pthread_self(), f);
   printf("\nHello World! %d  %d",  f, *g);
