@@ -4,29 +4,40 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <time.h>
 
-#define NUM_THREADS 10
+#define NUM_THREADS 100
 
 struct thread_data{
   int thread_id;
   int *balance;
 };
 
+// struct timespec t1;
+// t1.tv_sec  = 0;      // would use sleep() ...
+// t1.tv_nsec = 50000;
 /********************/
 void *PrintHello(void *threadarg)
 {
   long int taskid;
   struct thread_data *my_data;
   int *balance, save;
+  int slp;
 
   my_data = (struct thread_data *) threadarg;
   taskid = my_data->thread_id;
   balance = my_data->balance;
 
-  if (taskid % 2 == 0) *balance += 1;
-  else *balance -= 1;  
+  //sleep(3);
 
-  //  printf(" It's me, thread #%ld! balance = %d\n", taskid, *balance);
+  struct timespec t1;
+  t1.tv_sec  = 0;      // would use sleep() ...
+  t1.tv_nsec = 10000;
+
+  if (taskid % 2 == 0) *balance += 1;
+  else {slp = nanosleep(&t1,NULL); *balance -= 1;}
+
+  printf(" It's me, thread #%ld! balance = %d\n", taskid, *balance);
 
   pthread_exit(NULL);
 }
