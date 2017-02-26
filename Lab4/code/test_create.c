@@ -6,12 +6,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <time.h>
 
+void sleep(int time);
 #define NUM_THREADS 5
 
 /***************************************************************/
 void *work(void *i)
 {
+  //sleep(3);   // causes main to terminate first, work-printf doesn't print
   printf(" Hello World! from child thread %lu\n",
 	 pthread_self());
 
@@ -35,6 +38,8 @@ int main(int argc, char *argv[])
 
   printf("\n main() after creating the thread.  My id is %lu\n",
 	 pthread_self());
+
+  //sleep(3);  //all threads print, program termination is notably delayed
 
   return(0);
 
