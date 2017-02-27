@@ -7,7 +7,7 @@
 #include <pthread.h>
 #include <time.h>
 
-#define NUM_THREADS 10
+#define NUM_THREADS 100
 #define BUSY 100
 #define USE_PTHREAD_EXIT
 
@@ -37,8 +37,8 @@ void *work(void *i)
 
   //printf("\nHello World from %lu with value %d\n", pthread_self(), f);
   //printf("Hello World! %d  %d\n",  f, *g); // part 9 related
-  printf("\nMy index is %d", my_index);
-  mod_arr_ptr[my_index] = my_index * array_index;
+  //printf("\nMy index is %d", my_index);
+  mod_arr_ptr[my_index] = my_index;
 
   pthread_exit(NULL);
 }
