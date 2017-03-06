@@ -1,0 +1,30 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+See http://collaborate.bu.edu/engit/Grid/GridInstructions
+
+Connect to eng-grid with ssh:
+ssh to eng-grid.bu.edu
+
+Update your bash environment
+source /mnt/nokrb/sge/etc/bash_profile
+
+To run interactively (for short jobs - a few seconds definitely OK)
+qlogin -q interactive.q
+
+This gives you something generic.  To find the number of cores
+more /proc/cpuinfo
+
+For more cores, me.q has up to 32 core opterons
+qlogin -q me.q
+
+bme.q has 8 core opterons
+qlogin -q bme.q
+
+Notes:
+* The interactive queues also have priorities and limits, so you may
+  not always get to login to the interactive queue you want.
+* Once logged in to an interactive queue, there may be other users and other
+  jobs running.  In particular, you might not get all of the cores for your
+  job.
+
+For long jobs, follow the instructions for submitting "batch" mode.
