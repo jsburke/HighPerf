@@ -9,9 +9,9 @@
 #define GIG 1000000000
 #define CPG 2.0           // Cycles per GHz -- Adjust to your computer
 
-#define BASE  2
+//  #define BASE  2
 #define ITERS 1
-#define DELTA 8        // Right now only set up to do one size
+//  #define DELTA 8        // Right now only set up to do one size
 
 #define MINVAL   0.0
 #define MAXVAL  100.0
@@ -19,8 +19,8 @@
 #define TOL 0.00001
 
 #define O_ITERS 150        // # of OMEGA values to be tested
-#define PER_O_ITERS 10    // trials per OMEGA value
-double OMEGA = 0.50;     // OMEGA base - first OMEGA tested
+//  #define PER_O_ITERS 10    // trials per OMEGA value
+double OMEGA;     // OMEGA base - first OMEGA tested
 #define OMEGA_INC 0.01   // OMEGA increment for each O_ITERS
 
 typedef double data_t;
@@ -31,32 +31,66 @@ typedef struct {
   data_t *data;
 } vec_rec, *vec_ptr;
 
+vec_ptr new_vec(long int len);
+int set_vec_length(vec_ptr v, long int index);
+long int get_vec_length(vec_ptr v);
+int init_vector(vec_ptr v, long int len);
+int init_vector_rand(vec_ptr v, long int len);
+int print_vector(vec_ptr v);
+
+void SOR(vec_ptr v, int *iterations);
+void SOR_ji(vec_ptr v, int *iterations);
+void SOR_blocked(vec_ptr v, int *iterations);
+
 /*****************************************************************************/
-main(int argc, char *argv[])
+
+int main(int argc, char *argv[])
 {
-  double convergence[O_ITERS][2];
-  vec_ptr new_vec(long int len);
-  int set_vec_length(vec_ptr v, long int index);
-  long int get_vec_length(vec_ptr v);
-  int init_vector(vec_ptr v, long int len);
-  int init_vector_rand(vec_ptr v, long int len);
-  int print_vector(vec_ptr v);
+  int BASE, DELTA, PER_O_ITERS;
+
+  if(argc != 5)
+  {
+    printf("must have four command line parameters!\n");
+    return 0;
+  }
+
+  BASE  = strtol(argv[1], NULL, 10);
+  DELTA = strtol(argv[2], NULL, 10);
+  OMEGA  = strtod(argv[3], NULL);
+  PER_O_ITERS = strtol(argv[4], NULL, 10);
+
+  if(DELTA == 0)
+  {
+    printf("DELTA must be greater than zero\n");
+    return 0;
+  }
+
+  if(ITERS == 0)
+  {
+    printf("ITERS must be at least one\n");
+    return 0;
+  }
+
+  if(PER_O_ITERS == 0)
+  {
+    printf("PER_O_ITERS must be at least one\n");
+    return 0;
+  }    
+
+  double convergence[O_ITERS][2];  
   int *iterations;
-  void SOR(vec_ptr v, int *iterations);
-  void SOR_ji(vec_ptr v, int *iterations);
-  void SOR_blocked(vec_ptr v, int *iterations);
 
   long int i, j, k;
   long int time_sec, time_ns;
   long int MAXSIZE = BASE+(ITERS)*DELTA;
 
-  printf("\n Hello World -- SOR OMEGA test \n");
+  //printf("\n Hello World -- SOR OMEGA test \n");
 
   // declare and initialize the vector structure
   vec_ptr v0 = new_vec(MAXSIZE);
   iterations = (int *) malloc(sizeof(int));
 
-  printf("\n MAXSIZE = %d", MAXSIZE);
+  //printf("\n MAXSIZE = %d", MAXSIZE);
   for (i = 0; i < O_ITERS; i++) {
     printf("\n%0.2f", OMEGA);
     double acc = 0.0;
@@ -76,8 +110,8 @@ main(int argc, char *argv[])
     printf("\n%0.2f %0.1f", convergence[i][0], convergence[i][1]);
 
 
-  printf("\n");
-  
+  //printf("\n");
+  return 0;  
 }/* end main */
 /*********************************/
 
