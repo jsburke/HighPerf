@@ -23,6 +23,8 @@
 double OMEGA;     // OMEGA base - first OMEGA tested
 #define OMEGA_INC 0.01   // OMEGA increment for each O_ITERS
 
+#define FILE_PREFIX ((const unsigned char*) "SOR_OMEGA_")
+
 typedef double data_t;
 
 /* Create abstract data type for vector -- here a 2D array */
@@ -84,22 +86,34 @@ int main(int argc, char *argv[])
   long int time_sec, time_ns;
   long int MAXSIZE = BASE+(ITERS)*DELTA;
 
-  //printf("\n Hello World -- SOR OMEGA test \n");
+  char filename[255] = {0};
+  FILE *fp;
+
+  sprintf(filename, "%sB%d_D%d_O%lf_PO%d.csv", FILE_PREFIX, BASE, DELTA, OMEGA, PER_O_ITERS);
+  printf("Current File: %s\n", filename);
 
   // declare and initialize the vector structure
   vec_ptr v0 = new_vec(MAXSIZE);
   iterations = (int *) malloc(sizeof(int));
 
-  //printf("\n MAXSIZE = %d", MAXSIZE);
+  //////////////////////////////////////////////////
+  //
+  // Begin testing
+  //
+  //////////////////////////////////////////////////
+
+  fp = fopen(filename,"w");
+  //might want header line here
+
   for (i = 0; i < O_ITERS; i++) {
-    printf("\n%0.2f", OMEGA);
+    fprintf(fp, "\n%0.2f", OMEGA);
     double acc = 0.0;
     for (j = 0; j < PER_O_ITERS; j++) {
       set_vec_length(v0, MAXSIZE);
       init_vector_rand(v0, MAXSIZE);
       SOR(v0,iterations);
       acc += (double)(*iterations);
-      printf(", %d", *iterations);
+      fprintf(fp,", %d", *iterations);
     }
     convergence[i][0] = OMEGA;
     convergence[i][1] = acc/(double)(PER_O_ITERS);
@@ -107,10 +121,10 @@ int main(int argc, char *argv[])
   }
 
   for (i = 0; i < O_ITERS; i++)
-    printf("\n%0.2f %0.1f", convergence[i][0], convergence[i][1]);
+    fprintf(fp,"\n%0.2f %0.1f", convergence[i][0], convergence[i][1]);
 
+  fclose(fp);
 
-  //printf("\n");
   return 0;  
 }/* end main */
 /*********************************/
