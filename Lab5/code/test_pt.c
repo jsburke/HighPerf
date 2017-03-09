@@ -157,7 +157,7 @@ matrix_ptr new_matrix(long int len)
     data_t *data = (data_t *) calloc(len*len, sizeof(data_t));
     if (!data) {
 	  free((void *) result);
-	  printf("\n COULDN'T ALLOCATE STORAGE \n", result->len);
+	  printf("\n COULDN'T ALLOCATE STORAGE \n");
 	  return NULL;  /* Couldn't allocate storage */
 	}
 	result->data = data;
