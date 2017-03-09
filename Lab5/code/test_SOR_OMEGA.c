@@ -86,11 +86,13 @@ int main(int argc, char *argv[])
   long int time_sec, time_ns;
   long int MAXSIZE = BASE+(ITERS)*DELTA;
 
-  char filename[255] = {0};
-  FILE *fp;
+  char accum[255] = {0};
+  char conv [255] = {0};
+  FILE *fp;  //  pardon the fact that this gets reused sequentially please
 
-  sprintf(filename, "%sB%d_D%d_O%lf_PO%d.csv", FILE_PREFIX, BASE, DELTA, OMEGA, PER_O_ITERS);
-  printf("Current File: %s\n", filename);
+  sprintf(accum, "%s_ACCUM_B%d_D%d_O%lf_PO%d.csv", FILE_PREFIX, BASE, DELTA, OMEGA, PER_O_ITERS);
+  sprintf(conv,   "%s_CONV_B%d_D%d_O%lf_PO%d.csv", FILE_PREFIX, BASE, DELTA, OMEGA, PER_O_ITERS);
+  printf("Current File: %s\n", accum);
 
   // declare and initialize the vector structure
   vec_ptr v0 = new_vec(MAXSIZE);
@@ -102,7 +104,7 @@ int main(int argc, char *argv[])
   //
   //////////////////////////////////////////////////
 
-  fp = fopen(filename,"w");
+  fp = fopen(accum,"w");
   //might want header line here
 
   for (i = 0; i < O_ITERS; i++) {
@@ -119,6 +121,10 @@ int main(int argc, char *argv[])
     convergence[i][1] = acc/(double)(PER_O_ITERS);
     OMEGA += OMEGA_INC;
   }
+
+  fclose(fp);
+
+  fp = fopen(conv,"w");
 
   for (i = 0; i < O_ITERS; i++)
     fprintf(fp,"\n%0.2f %0.1f", convergence[i][0], convergence[i][1]);
