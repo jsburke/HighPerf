@@ -144,7 +144,7 @@ vec_ptr new_vec(long int len)
     data_t *data = (data_t *) calloc(len*len, sizeof(data_t));
     if (!data) {
       free((void *) result);
-      printf("\n COULDN'T ALLOCATE STORAGE \n", result->len);
+      printf("\n COULDN'T ALLOCATE STORAGE \n");
       return NULL;  /* Couldn't allocate storage */
     }
     result->data = data;
@@ -249,7 +249,7 @@ void SOR(vec_ptr v, int *iterations)
 	mean_change += change;
       }
     if (abs(data[(length-2)*(length-2)]) > 10.0*(MAXVAL - MINVAL)) {
-      printf("\n PROBABLY DIVERGENCE iter = %ld", iters);
+      printf("\n PROBABLY DIVERGENCE iter = %d", iters);
       break;
     }
   }
