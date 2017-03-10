@@ -9,20 +9,24 @@
 
 #define GIG 1000000000
 #define CPG 2.0           // Cycles per GHz -- Adjust to your computer
-double CPS = 2.99e9
+double CPS = 2.99e9;
 
-#define BASE  2
+//#define BASE  2
 #define ITERS 1
-#define DELTA 3000
+//#define DELTA 3000
 
 #define OPTIONS 3
-#define BLOCK_SIZE 8     // TO BE DETERMINED
+//#define BLOCK_SIZE 8     // TO BE DETERMINED
+int BLOCK_SIZE;
 
 #define MINVAL   0.0
 #define MAXVAL  10.0
 
 #define TOL 0.00001
-#define OMEGA 1.60       // TO BE DETERMINED
+//#define OMEGA 1.60       // TO BE DETERMINED
+double OMEGA;
+
+#define FILE_PREFIX ((const unsigned char*) "p2_SOR_")
 
 typedef double data_t;
 
@@ -79,8 +83,40 @@ struct timespec ts_diff(struct timespec start, struct timespec end);
 double measure_cps(void);
 
 /*****************************************************************************/
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
+  int BASE, DELTA;
+
+  if(argc != 5)
+  {
+    printf("must have four arguments\n");
+    return 0;
+  }
+
+  BASE  = strtol(argv[1], NULL, 10);
+  DELTA = strtol(argv[2], NULL, 10);
+  OMEGA  = strtod(argv[3], NULL);
+  BLOCK_SIZE = strtol(argv[4], NULL, 10);  
+
+
+  if(DELTA == 0)
+  {
+    printf("DELTA must be greater than zero\n");
+    return 0;
+  }
+
+  if(ITERS == 0)
+  {
+    printf("ITERS must be at least one\n");
+    return 0;
+  }
+
+  if(BLOCK_SIZE == 0)
+  {
+    printf("BLOCK_SIZE must be at least one\n");
+    return 0;
+  }    
+
   int OPTION;
   
   struct timespec time1, time2;
@@ -92,13 +128,25 @@ main(int argc, char *argv[])
   long int time_sec, time_ns;
   long int MAXSIZE = BASE+(ITERS+1)*DELTA;
 
+  char filename[255] = {0};
+  FILE *fp;
+
+  sprintf(filename,"%sO%lf_B%d_D%d_BS%d.csv", FILE_PREFIX, OMEGA, BASE, DELTA, BLOCK_SIZE);
+  printf("Current File: %s\n", filename);
+
   // declare and initialize the vector structure
   vec_ptr v0 = new_vec(MAXSIZE);
   iterations = (int *) malloc(sizeof(int));
 
+  //////////////////////////////////////////
+  //
+  //  Begin Tests
+  //
+  //////////////////////////////////////////
+
   OPTION = 0;
   for (i = 0; i < ITERS; i++) {
-    printf("\niter = %d length = %d OMEGA = %0.2f", i, BASE+(i+1)*DELTA, OMEGA);
+    printf("\niter = %ld length = %ld OMEGA = %0.2f", i, BASE+(i+1)*DELTA, OMEGA);
     set_vec_length(v0, BASE+(i+1)*DELTA);
     init_vector_rand(v0, BASE+(i+1)*DELTA);
     //print_vector(v0);
@@ -112,7 +160,7 @@ main(int argc, char *argv[])
 
   OPTION++;
   for (i = 0; i < ITERS; i++) {
-    printf("\niter = %d length = %d", i, BASE+(i+1)*DELTA);
+    printf("\niter = %ld length = %ld", i, BASE+(i+1)*DELTA);
     init_vector_rand(v0, BASE+(i+1)*DELTA);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
     set_vec_length(v0,BASE+(i+1)*DELTA);
@@ -124,7 +172,7 @@ main(int argc, char *argv[])
 
   OPTION++;
   for (i = 0; i < ITERS; i++) {
-    printf("\niter = %d length = %d", i, BASE+(i+1)*DELTA);
+    printf("\niter = %ld length = %ld", i, BASE+(i+1)*DELTA);
     init_vector_rand(v0, BASE+(i+1)*DELTA);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
     set_vec_length(v0,BASE+(i+1)*DELTA);
@@ -134,15 +182,26 @@ main(int argc, char *argv[])
     convergence[OPTION][i] = *iterations;
   }
 
+  ///////////////////////////////////////////
+  //
+  //   Write Results
+  //
+  ///////////////////////////////////////////
+
+  fp = fopen(filename,"w");
+  //  header line??
+
   for (i = 0; i < ITERS; i++) {
-    printf("\n%d, ", BASE+(i+1)*DELTA);
+    fprintf(fp, "\n%ld, ", BASE+(i+1)*DELTA);
     for (j = 0; j < OPTIONS; j++) {
       if (j != 0) printf(", ");
-      printf("%ld", (long int)((double)(CPG)*(double)
+      fprintf(fp, "%ld", (long int)((double)(CPG)*(double)
 		 (GIG * time_stamp[j][i].tv_sec + time_stamp[j][i].tv_nsec)));
-      printf(", %d", convergence[j][i]);
+      fprintf(fp, ", %d", convergence[j][i]);
     }
   }
+
+  fclose(fp);
   
 }/* end main */
 /*********************************/
