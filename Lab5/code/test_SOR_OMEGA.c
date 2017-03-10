@@ -67,9 +67,9 @@ int main(int argc, char *argv[])
     return 0;
   }
 
-  if(ITERS == 0)
+  if(BASE == 0)
   {
-    printf("ITERS must be at least one\n");
+    printf("BASE must be at least one\n");
     return 0;
   }
 
