@@ -38,5 +38,5 @@ printf "\n"
 
 echo "moving data files"
 mv *.csv ./part1_data/
-rm parallel
+rm sor_omega
 echo "test_SOR_OMEGA tests complete"
