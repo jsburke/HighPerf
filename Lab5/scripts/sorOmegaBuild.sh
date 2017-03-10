@@ -36,9 +36,6 @@ printf "\n"
 ./sor_omega 9 41 0.20 20
 printf "\n"
 
-./sor_omega 20 80 0.10 20
-printf "\n"
-
 echo "moving data files"
 mv *.csv ./part1_data/
 rm parallel
