@@ -24,10 +24,19 @@ gcc -O1 -lrt test_SOR_OMEGA.c -o sor_omega
 ./sor_omega 2 8 0.50 20
 printf "\n"
 
-./sor_omega 4 16 0.50 20
+./sor_omega 4 16 0.40 20
 printf "\n"
 
-./sor_omega 8 32 0.50 20
+./sor_omega 5 25 0.30 20
+printf "\n"
+
+./sor_omega 8 32 0.25 20
+printf "\n"
+
+./sor_omega 9 41 0.20 20
+printf "\n"
+
+./sor_omega 20 80 0.10 20
 printf "\n"
 
 echo "moving data files"
