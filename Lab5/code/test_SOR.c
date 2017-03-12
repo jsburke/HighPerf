@@ -1,4 +1,4 @@
-/*****************************************************************************/
+/* -*- C++ -*- **************************************************************/
 // gcc -O1 -o test_SOR test_SOR.c -lrt -lm
 
 #include <stdio.h>
@@ -7,9 +7,7 @@
 #include <math.h>
 #include <pthread.h>
 
-#define GIG 1000000000
-#define CPG 2.0           // Cycles per GHz -- Adjust to your computer
-double CPS = 2.99e9;
+double CPS = 2.9e9;       // Cycles/sec - adjusted by measure_cps()
 
 //#define BASE  2
 #define ITERS 1
@@ -138,6 +136,8 @@ int main(int argc, char *argv[])
   vec_ptr v0 = new_vec(MAXSIZE);
   iterations = (int *) malloc(sizeof(int));
 
+  measure_cps();
+
   //////////////////////////////////////////
   //
   //  Begin Tests
@@ -192,11 +192,14 @@ int main(int argc, char *argv[])
   //  header line??
 
   for (i = 0; i < ITERS; i++) {
-    fprintf(fp, "\n%ld, ", BASE+(i+1)*DELTA);
+    long int elements;
+    elements = BASE+(i+1)*DELTA;
+    fprintf(fp, "\n%ld, ", elements);
     for (j = 0; j < OPTIONS; j++) {
       if (j != 0) printf(", ");
-      fprintf(fp, "%ld", (long int)((double)(CPG)*(double)
-		 (GIG * time_stamp[j][i].tv_sec + time_stamp[j][i].tv_nsec)));
+      double seconds = ((double) time_stamp[j][i].tv_sec)
+                     + ((double) time_stamp[j][i].tv_nsec)/1.0e9;
+      fprintf(fp, "%lf", CPS * seconds / ((double)elements));
       fprintf(fp, ", %d", convergence[j][i]);
     }
   }
@@ -206,7 +209,7 @@ int main(int argc, char *argv[])
 }/* end main */
 /*********************************/
 
-//////////////////////////////  TIming related  ////////////////////////////////
+/////////////////////////////  Timing related  ///////////////////////////////
 
 double ts_sec(struct timespec ts)
 {
@@ -294,7 +297,7 @@ struct timespec diff(struct timespec start, struct timespec end)
   return temp;
 }
 
-//////////////////////////////  End Timing Related //////////////////////////////  
+/////////////////////////////  End Timing Related /////////////////////////////
 
 /* Create 2D vector of specified length per dimension */
 vec_ptr new_vec(long int len)
@@ -491,4 +494,3 @@ void SOR_blocked(vec_ptr v, int *iterations)
   *iterations = iters;
   printf("\n iters = %d", iters);
 }
- 

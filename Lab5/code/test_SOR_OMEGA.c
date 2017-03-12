@@ -1,13 +1,10 @@
-/*****************************************************************************/
+/* -*- C++ -*- **************************************************************/
 // gcc -O1 -o test_SOR_OMEGA test_SOR_OMEGA.c -lm
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include <pthread.h>
-
-#define GIG 1000000000
-#define CPG 2.0           // Cycles per GHz -- Adjust to your computer
 
 //  #define BASE  2
 #define ITERS 1
@@ -230,7 +227,25 @@ double fRand(double fMin, double fMax)
 
 /************************************/
 
-/* SOR */
+/* Two-dimensional Successive Over Relaxation (Euler integration of Laplacian
+ * for simulation of the Heat Equation or diffusion) using a parameter
+ * "Omega" that combines delta-t with the coefficient of thermal conductivity:
+ *
+ *         Omega = k delta_t
+ *
+ * Because we are modeling pure diffusion, a phenomenon that always converges
+ * to a steady-state equilibrium with exponential convergence, we can "in
+ * theory" use whatever value of k and delta_t we wish. The only thing that
+ * prevents us from using an arbitrarily large "omega" is the
+ * Courant-Friedrichs-Lewy condition, which for any Laplacian-only system takes
+ * the form
+ *
+ *         delta_t / delta_x^2 < M
+ *
+ * where M is a maximum rate that depends only on the coefficient of thermal
+ * conductivity k. (If the system included any complications, such as a random
+ * noise term to model external irradiation, M might need to be lower)
+ * */
 void SOR(vec_ptr v, int *iterations)
 {
   long int i, j;
@@ -242,22 +257,22 @@ void SOR(vec_ptr v, int *iterations)
   while ((mean_change/(double)(length*length)) > (double)TOL) {
     iters++;
     mean_change = 0;
-    for (i = 1; i < length-1; i++) 
+    for (i = 1; i < length-1; i++) {
       for (j = 1; j < length-1; j++) {
-	change = data[i*length+j] - .25 * (data[(i-1)*length+j] +
-					  data[(i+1)*length+j] +
-					  data[i*length+j+1] +
-					  data[i*length+j-1]);
-	data[i*length+j] -= change * OMEGA;
-	if (change < 0){
-	  change = -change;
-	}
-	mean_change += change;
+        change = data[i*length+j]
+             - .25 * (data[(i-1)*length+j] + data[(i+1)*length+j] +
+                      data[i*length+j+1] + data[i*length+j-1]);
+        data[i*length+j] -= change * OMEGA;
+        if (change < 0){
+          change = -change;
+        }
+        mean_change += change;
       }
-    if (abs(data[(length-2)*(length-2)]) > 10.0*(MAXVAL - MINVAL)) {
-      printf("\n PROBABLY DIVERGENCE iter = %d", iters);
-      break;
+      if (abs(data[(length-2)*(length-2)]) > 10.0*(MAXVAL - MINVAL)) {
+        printf("\n PROBABLY DIVERGENCE iter = %d", iters);
+        break;
+      }
     }
   }
-   *iterations = iters;
+  *iterations = iters;
 }
