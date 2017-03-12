@@ -13,12 +13,12 @@
 #define MINVAL   0.0
 #define MAXVAL  100.0
 
-#define TOL 0.00001
+#define TOL 0.00001   // tolerance
 
 #define O_ITERS 150        // # of OMEGA values to be tested
 //  #define PER_O_ITERS 10    // trials per OMEGA value
 double OMEGA;     // OMEGA base - first OMEGA tested
-#define OMEGA_INC 0.01   // OMEGA increment for each O_ITERS
+#define OMEGA_INC 1.05   // OMEGA increment for each O_ITERS
 
 #define FILE_PREFIX ((const unsigned char*) "SOR_OMEGA_")
 
@@ -37,7 +37,7 @@ int init_vector(vec_ptr v, long int len);
 int init_vector_rand(vec_ptr v, long int len);
 int print_vector(vec_ptr v);
 
-void SOR(vec_ptr v, int *iterations);
+void SOR(vec_ptr v, int *iterations, int * divergence_error);
 void SOR_ji(vec_ptr v, int *iterations);
 void SOR_blocked(vec_ptr v, int *iterations);
 
@@ -58,26 +58,27 @@ int main(int argc, char *argv[])
   OMEGA  = strtod(argv[3], NULL);
   PER_O_ITERS = strtol(argv[4], NULL, 10);
 
-  if(DELTA == 0)
+  if(DELTA <= 0)
   {
     printf("DELTA must be greater than zero\n");
     return 0;
   }
 
-  if(BASE == 0)
+  if(BASE <= 0)
   {
     printf("BASE must be at least one\n");
     return 0;
   }
 
-  if(PER_O_ITERS == 0)
+  if(PER_O_ITERS <= 0)
   {
     printf("PER_O_ITERS must be at least one\n");
     return 0;
   }    
 
   double convergence[O_ITERS][2];  
-  int *iterations;
+  int iterations;
+  int divergence_error;
 
   long int i, j, k;
   long int time_sec, time_ns;
@@ -87,13 +88,21 @@ int main(int argc, char *argv[])
   char conv [255] = {0};
   FILE *fp;  //  pardon the fact that this gets reused sequentially please
 
-  sprintf(accum, "%s_ACCUM_B%d_D%d_O%lf_PO%d.csv", FILE_PREFIX, BASE, DELTA, OMEGA, PER_O_ITERS);
-  sprintf(conv,   "%s_CONV_B%d_D%d_O%lf_PO%d.csv", FILE_PREFIX, BASE, DELTA, OMEGA, PER_O_ITERS);
+  /* Generate the filenames now (before we start changing OMEGA) */
+  // sprintf(accum, "%s_ACCUM_B%d_D%d_O%lf_PO%d.csv",
+  //                             FILE_PREFIX, BASE, DELTA, OMEGA, PER_O_ITERS);
+  sprintf(accum, "%s_ACCUM_S%ld_O%lf_PO%d.csv",
+                                     FILE_PREFIX, MAXSIZE, OMEGA, PER_O_ITERS);
+
+  // sprintf(conv,   "%s_CONV_B%d_D%d_O%lf_PO%d.csv",
+  //                            FILE_PREFIX, BASE, DELTA, OMEGA, PER_O_ITERS);
+  sprintf(conv,   "%s_CONV_S%ld_O%lf_PO%d.csv",
+                                    FILE_PREFIX, MAXSIZE, OMEGA, PER_O_ITERS);
+
   printf("Current File: %s\n", accum);
 
   // declare and initialize the vector structure
   vec_ptr v0 = new_vec(MAXSIZE);
-  iterations = (int *) malloc(sizeof(int));
 
   //////////////////////////////////////////////////
   //
@@ -103,29 +112,37 @@ int main(int argc, char *argv[])
 
   fp = fopen(accum,"w");
   //might want header line here
+  fprintf(fp, "Omega, iterations to converge (%d trials)\n", PER_O_ITERS);
 
   for (i = 0; i < O_ITERS; i++) {
-    fprintf(fp, "\n%0.2f", OMEGA);
+    fprintf(fp, "%0.2f", OMEGA);
     double acc = 0.0;
-    for (j = 0; j < PER_O_ITERS; j++) {
+    divergence_error = 0;
+    for (j = 0; (divergence_error == 0) && (j < PER_O_ITERS); j++) {
       set_vec_length(v0, MAXSIZE);
       init_vector_rand(v0, MAXSIZE);
-      SOR(v0,iterations);
-      acc += (double)(*iterations);
-      fprintf(fp,", %d", *iterations);
+      SOR(v0, &iterations, &divergence_error);
+      acc += (double)(iterations);
+      fprintf(fp,", %d", iterations);
     }
+    fprintf(fp, "\n");
     convergence[i][0] = OMEGA;
-    convergence[i][1] = acc/(double)(PER_O_ITERS);
-    OMEGA += OMEGA_INC;
+    if (divergence_error) {
+      convergence[i][1] = -1;
+    } else {
+      convergence[i][1] = acc/(double)(PER_O_ITERS);
+    }
+    OMEGA *= OMEGA_INC;
   }
 
   fclose(fp);
 
+  printf("Current File: %s\n", conv);
   fp = fopen(conv,"w");
-
-  for (i = 0; i < O_ITERS; i++)
-    fprintf(fp,"\n%0.2f %0.1f", convergence[i][0], convergence[i][1]);
-
+  fprintf(fp, "Omega, Mean iterations to converge\n");
+  for (i = 0; i < O_ITERS; i++) {
+    fprintf(fp,"%0.2f %0.1f\n", convergence[i][0], convergence[i][1]);
+  }
   fclose(fp);
 
   return 0;  
@@ -246,7 +263,7 @@ double fRand(double fMin, double fMax)
  * conductivity k. (If the system included any complications, such as a random
  * noise term to model external irradiation, M might need to be lower)
  * */
-void SOR(vec_ptr v, int *iterations)
+void SOR(vec_ptr v, int *iterations, int * divergence_error)
 {
   long int i, j;
   long int length = get_vec_length(v);
@@ -254,6 +271,7 @@ void SOR(vec_ptr v, int *iterations)
   double change, mean_change = 100;   // start w/ something big
   int iters = 0;
 
+  *iterations = 0;
   while ((mean_change/(double)(length*length)) > (double)TOL) {
     iters++;
     mean_change = 0;
@@ -268,9 +286,11 @@ void SOR(vec_ptr v, int *iterations)
         }
         mean_change += change;
       }
-      if (abs(data[(length-2)*(length-2)]) > 10.0*(MAXVAL - MINVAL)) {
-        printf("\n PROBABLY DIVERGENCE iter = %d", iters);
-        break;
+      if (abs(data[i*length+i]) > 10.0*(MAXVAL - MINVAL)) {
+        printf("SUSPECT DIVERGENCE after %d iterations\n", iters);
+        *iterations = iters;
+        *divergence_error = 1;
+        return;
       }
     }
   }
