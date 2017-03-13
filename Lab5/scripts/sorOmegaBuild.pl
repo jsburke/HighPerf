@@ -44,6 +44,9 @@ print "\n";
 system("$bin 9 41 0.10 20");
 print "\n";
 
+system("$bin 15 75 0.01 20");
+print "\n";
+
 $ddir = "part1_data";
 if(!(-d $ddir)) {
   print "making directory for data output files\n";
