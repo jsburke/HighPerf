@@ -38,10 +38,10 @@ print "\n";
 system("$bin 5 25 0.30 20");
 print "\n";
 
-system("$bin 8 32 0.25 20");
+system("$bin 8 32 0.20 20");
 print "\n";
 
-system("$bin 9 41 0.20 20");
+system("$bin 9 41 0.10 20");
 print "\n";
 
 $ddir = "part1_data";
