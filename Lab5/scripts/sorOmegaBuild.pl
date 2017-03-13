@@ -29,22 +29,24 @@ if (!(-x $bin)) {
 
 # run a series of tests
 # harvest data
-system("$bin 2 8 0.50 15");
+system("$bin 2 8 0.50 10");
 print "\n";
 
-system("$bin 4 16 0.40 15");
+system("$bin 4 16 0.40 10");
 print "\n";
 
-system("$bin 5 25 0.30 15");
+system("$bin 5 25 0.30 10");
 print "\n";
 
-system("$bin 8 32 0.20 15");
+system("$bin 8 32 0.20 10");
 print "\n";
 
-system("$bin 9 41 0.10 15");
+system("$bin 9 41 0.10 10");
 print "\n";
 
-system("$bin 15 75 0.01 15");
+system("$bin 15 50 0.09 10");
+
+system("$bin 15 75 0.08 10");
 print "\n";
 
 $ddir = "part1_data";
