@@ -21,7 +21,7 @@ double  CPS  = 2.9e9;
 #define INIT_LOW -10.0
 #define INIT_HIGH 10.0
 
-#define FILE_PREFIX ((const unsigned char*) "pthread_hard_")
+#define FILE_PREFIX ((const unsigned char*) "pthread_easy_")
 
 typedef double data_t;
 
@@ -441,8 +441,8 @@ void pt_cb_bl(matrix_ptr a, matrix_ptr b, matrix_ptr c)
   data_t *c0 = get_matrix_start(c);
 
   for (i = 0; i < length*length; i++) 
-    c0[i] = (data_t)(cosh(tan(sqrt(cos(exp((double)(a0[i])))))));
-  //c0[i] = a0[i];
+    //c0[i] = (data_t)(cosh(tan(sqrt(cos(exp((double)(a0[i])))))));
+    c0[i] = a0[i];
 }
 
 /********************/
@@ -466,8 +466,8 @@ void *cb_work(void *threadarg)
   high = ((taskid+1)* length * length)/NUM_THREADS;
 
   for (i = low; i < high; i++)
-    cM[i] = (data_t)(cosh(tan(sqrt(cos(exp((double)(aM[i])))))));
-  //cM[i] = aM[i];
+    //cM[i] = (data_t)(cosh(tan(sqrt(cos(exp((double)(aM[i])))))));
+    cM[i] = aM[i];
 
   pthread_exit(NULL);
 }
