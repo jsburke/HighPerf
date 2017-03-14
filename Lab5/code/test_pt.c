@@ -8,7 +8,7 @@
 #include <math.h>
 
 #define GIG 1000000000
-#define CPG 2.0           // Cycles per GHz -- Adjust to your computer
+#define CPG 2.9           // Cycles per GHz -- Adjust to your computer
 
 #define BASE  0
 #define ITERS 20
