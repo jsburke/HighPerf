@@ -146,7 +146,7 @@ int main(int argc, char *argv[])
 
   OPTION = 0;
   for (i = 0; i < ITERS; i++) {
-    printf("\niter = %ld length = %ld OMEGA = %0.2f", i, BASE+(i+1)*DELTA, OMEGA);
+    //printf("\niter = %ld length = %ld OMEGA = %0.2f", i, BASE+(i+1)*DELTA, OMEGA);
     set_vec_length(v0, BASE+(i+1)*DELTA);
     init_vector_rand(v0, BASE+(i+1)*DELTA);
     //print_vector(v0);
@@ -160,7 +160,7 @@ int main(int argc, char *argv[])
 
   OPTION++;
   for (i = 0; i < ITERS; i++) {
-    printf("\niter = %ld length = %ld", i, BASE+(i+1)*DELTA);
+    //printf("\niter = %ld length = %ld", i, BASE+(i+1)*DELTA);
     init_vector_rand(v0, BASE+(i+1)*DELTA);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
     set_vec_length(v0,BASE+(i+1)*DELTA);
@@ -172,7 +172,7 @@ int main(int argc, char *argv[])
 
   OPTION++;
   for (i = 0; i < ITERS; i++) {
-    printf("\niter = %ld length = %ld", i, BASE+(i+1)*DELTA);
+    //printf("\niter = %ld length = %ld", i, BASE+(i+1)*DELTA);
     init_vector_rand(v0, BASE+(i+1)*DELTA);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
     set_vec_length(v0,BASE+(i+1)*DELTA);
@@ -199,8 +199,8 @@ int main(int argc, char *argv[])
       if (j != 0) printf(", ");
       double seconds = ((double) time_stamp[j][i].tv_sec)
                      + ((double) time_stamp[j][i].tv_nsec)/1.0e9;
-      fprintf(fp, "%lf", CPS * seconds / ((double)elements));
-      fprintf(fp, ", %d", convergence[j][i]);
+      fprintf(fp, "%lf sec", CPS * seconds / ((double)elements));
+      //fprintf(fp, ", %d", convergence[j][i]);
     }
   }
 
@@ -424,7 +424,7 @@ void SOR(vec_ptr v, int *iterations)
     }
   }
    *iterations = iters;
-  printf("\n iters = %d", iters);
+  //printf("\n iters = %d", iters);
 }
 
 /* SOR with reversed indices */
@@ -457,7 +457,7 @@ void SOR_ji(vec_ptr v, int *iterations)
     }
   }
   *iterations = iters;
-  printf("\n iters = %d", iters);
+  //printf("\n iters = %d", iters);
 }
 
 /* SOR w/ blocking */
@@ -493,5 +493,5 @@ void SOR_blocked(vec_ptr v, int *iterations)
     }
   }
   *iterations = iters;
-  printf("\n iters = %d", iters);
+  //printf("\n iters = %d", iters);
 }
