@@ -196,7 +196,7 @@ int main(int argc, char *argv[])
     elements = BASE+(i+1)*DELTA;
     fprintf(fp, "\n%ld, ", elements);
     for (j = 0; j < OPTIONS; j++) {
-      if (j != 0) printf(", ");
+      if (j != 0) fprintf(fp,", ");
       double seconds = ((double) time_stamp[j][i].tv_sec)
                      + ((double) time_stamp[j][i].tv_nsec)/1.0e9;
       fprintf(fp, "%lf sec", CPS * seconds / ((double)elements));
