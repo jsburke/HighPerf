@@ -277,6 +277,16 @@ double fRand(double fMin, double fMax)
 
 /*************************************************/
 /* CPU bound baseline */
+double cpu_easy(double val)
+{
+  return val * val + val;  
+}
+
+double cpu_hard(double val)
+{
+  return (cosh(tan(sqrt(cos(exp(val))))));
+}
+
 void pt_cb_bl(matrix_ptr a, matrix_ptr b, matrix_ptr c)
 {
   long int i, j, k;
