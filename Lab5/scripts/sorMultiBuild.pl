@@ -43,16 +43,25 @@ print "\n";
 system("$bin 11 4 1.675212 25");
 print "\n";
 
-# system("$bin 15 5 1.709798 5");
-# print "\n";
+system("$bin 15 5 1.709798 5");
+print "\n";
+system("$bin 15 5 1.709798 8");
+print "\n";
+system("$bin 15 5 1.709798 16");
+print "\n";
+system("$bin 15 5 1.709798 25");
+print "\n";
 
-# system("$bin 35 15 1.819958 5");
-# print "\n";
+system("$bin 35 15 1.819958 5");
+print "\n";
+system("$bin 35 15 1.819958 8");
+print "\n";
+system("$bin 35 15 1.819958 16");
+print "\n";
+system("$bin 35 15 1.819958 25");
+print "\n";
 
 # system("$bin 50 25 1.868704 5");
-# print "\n";
-
-# system("$bin 80 30 1.914749 5");
 # print "\n";
 
 system("$bin 95 35 1.934833 5");
@@ -64,17 +73,41 @@ print "\n";
 system("$bin 95 35 1.934833 25");
 print "\n";
 
-# system("$bin 125 50 1.97057 5");
-# print "\n";
+system("$bin 125 50 1.97057 5");
+print "\n";
+system("$bin 125 50 1.97057 8");
+print "\n";
+system("$bin 125 50 1.97057 16");
+print "\n";
+system("$bin 125 50 1.97057 25");
+print "\n";
 
-# system("$bin 130 70 1.986623 5");
-# print "\n";
+system("$bin 130 70 1.986623 5");
+print "\n";
+system("$bin 130 70 1.986623 8");
+print "\n";
+system("$bin 130 70 1.986623 16");
+print "\n";
+system("$bin 130 70 1.986623 25");
+print "\n";
 
-# system("$bin 135 75 1.992489 5");
-# print "\n";
+system("$bin 135 75 1.992489 5");
+print "\n";
+system("$bin 135 75 1.992489 8");
+print "\n";
+system("$bin 135 75 1.992489 16");
+print "\n";
+system("$bin 135 75 1.992489 25");
+print "\n";
 
-# system("$bin 140 80 1.998082 5");
-# print "\n";
+system("$bin 140 80 1.998082 5");
+print "\n";
+system("$bin 140 80 1.998082 8");
+print "\n";
+system("$bin 140 80 1.998082 16");
+print "\n";
+system("$bin 140 80 1.998082 25");
+print "\n";
 
 $ddir = "part2_data";
 if(!(-d $ddir)) {
