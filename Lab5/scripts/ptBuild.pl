@@ -25,7 +25,7 @@ if (!(-x $bin)) {
   die "$myname: No binary $bin, compile error?\n";
 }
 
-system("$bin 10 5 78");  # up to length of 400
+system("$bin 10 5 278");  # up to length of 400
 print "\n";
 
 
