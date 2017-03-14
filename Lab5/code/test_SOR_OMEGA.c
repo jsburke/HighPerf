@@ -15,10 +15,11 @@
 
 #define TOL 0.00001   // tolerance
 
-#define O_ITERS 50        // # of OMEGA values to be tested
+#define O_ITERS 10        // # of OMEGA values to be tested
 //  #define PER_O_ITERS 10    // trials per OMEGA value
 double OMEGA;     // OMEGA base - first OMEGA tested
-#define OMEGA_INC 1.05   // OMEGA increment for each O_ITERS
+#define OMEGA_INC 0.02  // OMEGA increment for each O_ITERS
+#define OP +
 
 #define FILE_PREFIX ((const unsigned char*) "SOR_OMEGA_")
 
@@ -132,7 +133,7 @@ int main(int argc, char *argv[])
     } else {
       convergence[i][1] = acc/(double)(PER_O_ITERS);
     }
-    OMEGA *= OMEGA_INC;
+    OMEGA = OMEGA OP OMEGA_INC;
   }
 
   fclose(fp);
