@@ -9,16 +9,19 @@
 
 #define GIG 1000000000
 #define CPG 2.9           // Cycles per GHz -- Adjust to your computer
+double  CPS  = 2.9e9;
 
-#define BASE  0
-#define ITERS 20
-#define DELTA 10
+// #define BASE  0
+// #define ITERS 20
+// #define DELTA 10
 
 #define OPTIONS 3        // Current setting, vary as you wish!
 #define IDENT 0
 
 #define INIT_LOW -10.0
 #define INIT_HIGH 10.0
+
+#define FILE_PREFIX ((const unsigned char*) "pthread_hard_")
 
 typedef double data_t;
 
@@ -39,28 +42,80 @@ struct thread_data{
   matrix_ptr d;
 };
 
+/////////////////  Time related  //////////////////////////////
+
+//rdtsc related
+typedef union {
+  unsigned long long int64;
+  struct {unsigned int lo, hi;} int32;
+} mcps_tctr;
+
+#define MCPS_RDTSC(cpu_c) __asm__ __volatile__ ("rdtsc" : \
+                     "=a" ((cpu_c).int32.lo), "=d"((cpu_c).int32.hi))
+
+int clock_gettime(clockid_t clk_id, struct timespec *tp);
+struct timespec diff(struct timespec start, struct timespec end);
+double ts_sec(struct timespec ts);
+struct timespec ts_diff(struct timespec start, struct timespec end);
+double measure_cps(void);
+
+////////////////////////////////////////////////////////////////
+matrix_ptr new_matrix(long int len);
+int set_matrix_length(matrix_ptr m, long int index);
+long int get_matrix_length(matrix_ptr m);
+int init_matrix(matrix_ptr m, long int len);
+int zero_matrix(matrix_ptr m, long int len);
+void pt_cb_bl(matrix_ptr a, matrix_ptr b, matrix_ptr c);
+void pt_cb(matrix_ptr a, matrix_ptr b, matrix_ptr c);
+void pt_mb(matrix_ptr a, matrix_ptr b, matrix_ptr c, matrix_ptr d);
+void pt_ob(matrix_ptr a, matrix_ptr b, matrix_ptr c);
+
 /*************************************************************************/
 int main(int argc, char *argv[])
 {
+  int BASE, DELTA, ITERS;
+
+  if(argc != 4)
+  {
+    printf("must have three arguments\n");
+    return 0;
+  }
+
+  BASE  = strtol(argv[1], NULL, 10);
+  DELTA = strtol(argv[2], NULL, 10);
+  ITERS = strtol(argv[3], NULL, 10);  
+
+  if (DELTA <= 0)
+  {
+    printf("DELTA must be more than zero\n");
+    return 0;
+  }
+
+  if (BASE <= 0)
+  {
+    printf("BASE must be more than zero\n");
+    return 0;
+  }
+
+  if (ITERS <= 0)
+  {
+    printf("ITERS must be more than zero\n");
+    return 0;
+  }
+
   int OPTION;
-  struct timespec diff(struct timespec start, struct timespec end);
   struct timespec time1, time2;
   struct timespec time_stamp[OPTIONS][ITERS+1];
-  matrix_ptr new_matrix(long int len);
-  int set_matrix_length(matrix_ptr m, long int index);
-  long int get_matrix_length(matrix_ptr m);
-  int init_matrix(matrix_ptr m, long int len);
-  int zero_matrix(matrix_ptr m, long int len);
-  void pt_cb_bl(matrix_ptr a, matrix_ptr b, matrix_ptr c);
-  void pt_cb(matrix_ptr a, matrix_ptr b, matrix_ptr c);
-  void pt_mb(matrix_ptr a, matrix_ptr b, matrix_ptr c, matrix_ptr d);
-  void pt_ob(matrix_ptr a, matrix_ptr b, matrix_ptr c);
 
   long int i, j, k;
   long int time_sec, time_ns;
   long int MAXSIZE = BASE+(ITERS)*DELTA;
 
-  printf("\n Hello World -- Test OMP \n");
+  char filename[255] = {0};
+  FILE *fp;
+
+  sprintf(filename, "%sB%d_D%d_I%d.csv", FILE_PREFIX, BASE, DELTA, ITERS);
+  printf("Current File: %s\n", filename);
 
   // declare and initialize the matrix structure
   matrix_ptr a0 = new_matrix(MAXSIZE);
@@ -72,6 +127,12 @@ int main(int argc, char *argv[])
   matrix_ptr d0 = new_matrix(MAXSIZE);
   init_matrix_rand_ptr(d0, MAXSIZE);
 
+  //////////////////////////////////////////////////////
+  //
+  // Begin tests
+  //
+  //////////////////////////////////////////////////////
+
   OPTION = 0;
   for (i = 0; i < ITERS; i++) {
     init_matrix_rand(a0,BASE+(i+1)*DELTA);
@@ -81,8 +142,8 @@ int main(int argc, char *argv[])
     clock_gettime(CLOCK_REALTIME, &time1);
     pt_cb_bl(a0,b0,c0);
     clock_gettime(CLOCK_REALTIME, &time2);
-    time_stamp[OPTION][i] = diff(time1,time2);
-    printf("\niter = %d", i);
+    time_stamp[OPTION][i] = ts_diff(time1,time2);
+    //printf("\niter = %d", i);
   }
 
   NUM_THREADS = 2;
@@ -95,8 +156,8 @@ int main(int argc, char *argv[])
     clock_gettime(CLOCK_REALTIME, &time1);
     pt_cb(a0,b0,c0);
     clock_gettime(CLOCK_REALTIME, &time2);
-    time_stamp[OPTION][i] = diff(time1,time2);
-    printf("\niter = %d", i);
+    time_stamp[OPTION][i] = ts_diff(time1,time2);
+    //printf("\niter = %d", i);
   }
 
   NUM_THREADS = 4;
@@ -109,8 +170,8 @@ int main(int argc, char *argv[])
     clock_gettime(CLOCK_REALTIME, &time1);
     pt_cb(a0,b0,c0);
     clock_gettime(CLOCK_REALTIME, &time2);
-    time_stamp[OPTION][i] = diff(time1,time2);
-    printf("\niter = %d", i);
+    time_stamp[OPTION][i] = ts_diff(time1,time2);
+    //printf("\niter = %d", i);
   }
   /*
   NUM_THREADS = 8;
@@ -123,23 +184,122 @@ int main(int argc, char *argv[])
     clock_gettime(CLOCK_REALTIME, &time1);
     pt_cb(a0,b0,c0);
     clock_gettime(CLOCK_REALTIME, &time2);
-    time_stamp[OPTION][i] = diff(time1,time2);
+    time_stamp[OPTION][i] = ts_diff(time1,time2);
     printf("\niter = %d", i);
   }
   */
-  printf("\nlength, other data");
+
+  /////////////////////////////////////////////////
+  //
+  // Write Results
+  //
+  /////////////////////////////////////////////////
+
+  fp = fopen(filename,"w");
+  fprintf(fp,"length, other data");
+
   for (i = 0; i < ITERS; i++) {
-    printf("\n%d, ", BASE+(i+1)*DELTA);
+    fprintf(fp, "\n%ld, ", BASE+(i+1)*DELTA);
     for (j = 0; j < OPTIONS; j++) {
-      if (j != 0) printf(", ");
-      printf("%ld", (long int)((double)(CPG)*(double)
+      if (j != 0) fprintf(fp, ", ");
+      fprintf(fp, "%ld", (long int)((double)(CPG)*(double)
       	 (GIG * time_stamp[j][i].tv_sec + time_stamp[j][i].tv_nsec)));
     }
   }
 
-  printf("\n Good Bye World!\n");
+  //printf("\n Good Bye World!\n");
 
 }/* end main */
+
+/////////////////////////////  Timing related  ///////////////////////////////
+
+double ts_sec(struct timespec ts)
+{
+  return ((double)(ts.tv_sec)) + ((double)(ts.tv_nsec))/1.0e9;
+}
+
+/* ---------------------------------------------------------------------------
+| Make the CPU busy, and measure CPS (cycles per second).
+|
+| Explanation:
+| If tests are very fast, they can run so quickly that the SpeedStep control
+| (in kernel and/or on-chip) doesn't notice in time, and the first few tests
+| might finish while the CPU is still in its sleep state (about 800 MHz,
+| judging from my measurements)
+|   A simple way to get around this is to run some kind of busy-loop that
+| forces the OS and/or CPU to notice it needs to go to full clock speed.
+| We print out the results of the computation so the loop won't get optimised
+| away.
+|
+| Copy this code into other programs as desired. It provides three entry
+| points:
+|
+| double ts_sec(ts): converts a timespec into seconds
+| timespec ts_diff(ts1, ts2): computes interval between two timespecs
+| measure_cps(): Does the busy loop and prints out measured CPS (cycles/sec)
+--------------------------------------------------------------------------- */
+
+struct timespec ts_diff(struct timespec start, struct timespec end)
+{
+  struct timespec temp;
+  if ((end.tv_nsec-start.tv_nsec)<0) {
+    temp.tv_sec = end.tv_sec-start.tv_sec-1;
+    temp.tv_nsec = 1000000000+end.tv_nsec-start.tv_nsec;
+  } else {
+    temp.tv_sec = end.tv_sec-start.tv_sec;
+    temp.tv_nsec = end.tv_nsec-start.tv_nsec;
+  }
+  return temp;
+}
+
+double measure_cps()
+{
+  struct timespec cal_start, cal_end;
+  mcps_tctr tsc_start, tsc_end;
+  double total_time;
+  double total_cycles;
+  /* We perform a chaotic iteration and print the result, to defeat
+     compiler optimisation */
+  double chaosC = -1.8464323952913974; double z = 0.0;
+  long int i, ilim, j;
+
+  /* Do it twice and throw away results from the first time; this ensures the
+   * OS and CPU will notice it's busy and set the clock speed. */
+  for(j=0; j<2; j++) {
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &cal_start);
+    MCPS_RDTSC(tsc_start);
+    ilim = 50*1000*1000;
+    for (i=0; i<ilim; i++)
+      z = z * z + chaosC;
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &cal_end);
+    MCPS_RDTSC(tsc_end);
+  }
+
+  total_time = ts_sec(ts_diff(cal_start, cal_end));
+  total_cycles = (double)(tsc_end.int64-tsc_start.int64);
+  CPS = total_cycles / total_time;
+  printf("z == %f, CPS == %g\n", z, CPS);
+
+  return CPS;
+}
+/* ---------------------------------------------------------------------------
+| End of measure_cps code
+--------------------------------------------------------------------------- */
+
+struct timespec diff(struct timespec start, struct timespec end)
+{
+  struct timespec temp;
+  if ((end.tv_nsec-start.tv_nsec)<0) {
+    temp.tv_sec = end.tv_sec-start.tv_sec-1;
+    temp.tv_nsec = 1000000000+end.tv_nsec-start.tv_nsec;
+  } else {
+    temp.tv_sec = end.tv_sec-start.tv_sec;
+    temp.tv_nsec = end.tv_nsec-start.tv_nsec;
+  }
+  return temp;
+}
+
+/////////////////////////////  End Timing Related /////////////////////////////  
 
 /**********************************************/
 /* Create matrix of specified length */
@@ -256,18 +416,6 @@ int print_matrix(matrix_ptr v)
 }
 
 /*************************************************/
-struct timespec diff(struct timespec start, struct timespec end)
-{
-  struct timespec temp;
-  if ((end.tv_nsec-start.tv_nsec)<0) {
-    temp.tv_sec = end.tv_sec-start.tv_sec-1;
-    temp.tv_nsec = 1000000000+end.tv_nsec-start.tv_nsec;
-  } else {
-    temp.tv_sec = end.tv_sec-start.tv_sec;
-    temp.tv_nsec = end.tv_nsec-start.tv_nsec;
-  }
-  return temp;
-}
 
 double fRand(double fMin, double fMax)
 {
@@ -276,16 +424,6 @@ double fRand(double fMin, double fMax)
 }
 
 /*************************************************/
-/* CPU bound baseline */
-double cpu_easy(double val)
-{
-  return val * val + val;  
-}
-
-double cpu_hard(double val)
-{
-  return (cosh(tan(sqrt(cos(exp(val))))));
-}
 
 void pt_cb_bl(matrix_ptr a, matrix_ptr b, matrix_ptr c)
 {
