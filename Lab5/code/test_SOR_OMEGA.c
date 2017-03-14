@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
   //might want header line here
   fprintf(fp, "Omega, iterations to converge (%d trials)\n", PER_O_ITERS);
 
-  for (i = 0; (i < O_ITERS) && (OMEGA <= 2.00); i++) {
+  for (i = 0; (i < O_ITERS); i++) {
     fprintf(fp, "%0.5f", OMEGA);
     double acc = 0.0;
     divergence_error = 0;
