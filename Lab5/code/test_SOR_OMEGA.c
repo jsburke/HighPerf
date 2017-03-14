@@ -15,10 +15,10 @@
 
 #define TOL 0.00001   // tolerance
 
-#define O_ITERS 10        // # of OMEGA values to be tested
+#define O_ITERS 100        // # of OMEGA values to be tested
 //  #define PER_O_ITERS 10    // trials per OMEGA value
 double OMEGA;     // OMEGA base - first OMEGA tested
-#define OMEGA_INC 0.02  // OMEGA increment for each O_ITERS
+#define OMEGA_INC 0.006  // OMEGA increment for each O_ITERS
 #define OP +
 
 #define FILE_PREFIX ((const unsigned char*) "SOR_OMEGA_")
@@ -115,8 +115,8 @@ int main(int argc, char *argv[])
   //might want header line here
   fprintf(fp, "Omega, iterations to converge (%d trials)\n", PER_O_ITERS);
 
-  for (i = 0; i < O_ITERS; i++) {
-    fprintf(fp, "%0.2f", OMEGA);
+  for (i = 0; (i < O_ITERS) && (OMEGA <= 2.00); i++) {
+    fprintf(fp, "%0.5f", OMEGA);
     double acc = 0.0;
     divergence_error = 0;
     for (j = 0; (divergence_error == 0) && (j < PER_O_ITERS); j++) {
@@ -142,7 +142,7 @@ int main(int argc, char *argv[])
   fp = fopen(conv,"w");
   fprintf(fp, "Omega, Mean iterations to converge\n");
   for (i = 0; i < O_ITERS; i++) {
-    fprintf(fp,"%0.2f %0.1f\n", convergence[i][0], convergence[i][1]);
+    fprintf(fp,"%0.5f %0.1f\n", convergence[i][0], convergence[i][1]);
   }
   fclose(fp);
 
