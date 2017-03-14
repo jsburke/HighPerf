@@ -133,12 +133,15 @@ int main(int argc, char *argv[])
   //
   //////////////////////////////////////////////////////
 
+
+  int elements;
   OPTION = 0;
   for (i = 0; i < ITERS; i++) {
-    init_matrix_rand(a0,BASE+(i+1)*DELTA);
-    set_matrix_length(a0,BASE+(i+1)*DELTA);
-    set_matrix_length(b0,BASE+(i+1)*DELTA);
-    set_matrix_length(c0,BASE+(i+1)*DELTA);
+    elements = BASE+(i+1)*DELTA;
+    init_matrix_rand(a0,elements);
+    set_matrix_length(a0,elements);
+    set_matrix_length(b0,elements);
+    set_matrix_length(c0,elements);
     clock_gettime(CLOCK_REALTIME, &time1);
     pt_cb_bl(a0,b0,c0);
     clock_gettime(CLOCK_REALTIME, &time2);
@@ -149,10 +152,11 @@ int main(int argc, char *argv[])
   NUM_THREADS = 2;
   OPTION++;
   for (i = 0; i < ITERS; i++) {
-    init_matrix_rand(a0,BASE+(i+1)*DELTA);
-    set_matrix_length(a0,BASE+(i+1)*DELTA);
-    set_matrix_length(b0,BASE+(i+1)*DELTA);
-    set_matrix_length(c0,BASE+(i+1)*DELTA);
+    elements = BASE+(i+1)*DELTA;
+    init_matrix_rand(a0,elements);
+    set_matrix_length(a0,elements);
+    set_matrix_length(b0,elements);
+    set_matrix_length(c0,elements);
     clock_gettime(CLOCK_REALTIME, &time1);
     pt_cb(a0,b0,c0);
     clock_gettime(CLOCK_REALTIME, &time2);
@@ -163,10 +167,11 @@ int main(int argc, char *argv[])
   NUM_THREADS = 4;
   OPTION++;
   for (i = 0; i < ITERS; i++) {
-    init_matrix_rand(a0,BASE+(i+1)*DELTA);
-    set_matrix_length(a0,BASE+(i+1)*DELTA);
-    set_matrix_length(b0,BASE+(i+1)*DELTA);
-    set_matrix_length(c0,BASE+(i+1)*DELTA);
+    elements = BASE+(i+1)*DELTA;
+    init_matrix_rand(a0,elements);
+    set_matrix_length(a0,elements);
+    set_matrix_length(b0,elements);
+    set_matrix_length(c0,elements);
     clock_gettime(CLOCK_REALTIME, &time1);
     pt_cb(a0,b0,c0);
     clock_gettime(CLOCK_REALTIME, &time2);
@@ -196,7 +201,7 @@ int main(int argc, char *argv[])
   /////////////////////////////////////////////////
 
   fp = fopen(filename,"w");
-  fprintf(fp,"length, other data");
+  fprintf(fp,"length, serial, threads = 2, threads = 4");
 
   for (i = 0; i < ITERS; i++) {
     fprintf(fp, "\n%ld, ", BASE+(i+1)*DELTA);
@@ -206,6 +211,8 @@ int main(int argc, char *argv[])
       	 (GIG * time_stamp[j][i].tv_sec + time_stamp[j][i].tv_nsec)));
     }
   }
+  fprintf(fp, "\n");
+  fclose(fp);
 
   //printf("\n Good Bye World!\n");
 
