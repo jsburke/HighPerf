@@ -51,7 +51,7 @@ def parse_cmd():
 #------------------------------------------------------
 
 def omega_fit(elems):
-	fit = (1.33 + 0.062 * log(elems))
+	fit = (1.8169 + 0.0933 * log(19.6578 * elems)) / 1.55211
 	if (fit >= 2.0):
 		fit = 1.9999
 	return fit
