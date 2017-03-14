@@ -27,15 +27,27 @@ if (!(-x $bin)) {
 
 system("$bin 8 2 1.626466 5");
 print "\n";
+system("$bin 8 2 1.626466 8");
+print "\n";
+system("$bin 8 2 1.626466 16");
+print "\n";
+system("$bin 8 2 1.626466 25");
+print "\n";
 
 system("$bin 11 4 1.675212 5");
 print "\n";
-
-system("$bin 15 5 1.709798 5");
+system("$bin 11 4 1.675212 8");
+print "\n";
+system("$bin 11 4 1.675212 16");
+print "\n";
+system("$bin 11 4 1.675212 25");
 print "\n";
 
-system("$bin 35 15 1.819958 5");
-print "\n";
+# system("$bin 15 5 1.709798 5");
+# print "\n";
+
+# system("$bin 35 15 1.819958 5");
+# print "\n";
 
 # system("$bin 50 25 1.868704 5");
 # print "\n";
@@ -43,8 +55,14 @@ print "\n";
 # system("$bin 80 30 1.914749 5");
 # print "\n";
 
-# system("$bin 95 35 1.934833 5");
-# print "\n";
+system("$bin 95 35 1.934833 5");
+print "\n";
+system("$bin 95 35 1.934833 8");
+print "\n";
+system("$bin 95 35 1.934833 16");
+print "\n";
+system("$bin 95 35 1.934833 25");
+print "\n";
 
 # system("$bin 125 50 1.97057 5");
 # print "\n";
