@@ -186,14 +186,15 @@ int main(int argc, char *argv[])
   long int elements;
   elements = ASIZE * ASIZE * MAX_ITERS;
   fprintf(fp, "%ld", elements);
+  printf("%ld", elements);
   for (j = 0; j < OPTIONS; j++) {
     double seconds = time_stamp[j];
     fprintf(fp, ", %lf", CPS * seconds / ((double)elements));
-    //fprintf(fp, ", %d", convergence[j][i]);
+    printf(", %lf", CPS * seconds / ((double)elements));
   }
   fprintf(fp, "\n");
-
   printf("\n");
+
   fclose(fp);
   
 }/* end main */
@@ -396,8 +397,8 @@ void SOR(vec_ptr v, long int itermax)
   for(iters=0; iters<itermax; iters++) {
     for (i = 0; i < length; i++) {
       for (j = 0; j < length; j++) {
-        im1 = (i-1)%length; ip1 = (i+1)%length;
-        jm1 = (j-1)%length; jp1 = (j+1)%length;
+        im1 = (i+length-1)%length; ip1 = (i+1)%length;
+        jm1 = (j+length-1)%length; jp1 = (j+1)%length;
         change = data[i*length+j]
              - .25 * (data[im1*length+j] + data[ip1*length+j] +
                       data[i*length+jp1] + data[i*length+jm1]);
@@ -421,8 +422,8 @@ void SOR_ji(vec_ptr v, long int itermax)
   for(iters=0; iters<itermax; iters++) {
     for (j = 0; j < length; j++) {
       for (i = 0; i < length; i++) {
-        im1 = (i-1)%length; ip1 = (i+1)%length;
-        jm1 = (j-1)%length; jp1 = (j+1)%length;
+        im1 = (i+length-1)%length; ip1 = (i+1)%length;
+        jm1 = (j+length-1)%length; jp1 = (j+1)%length;
         change = data[i*length+j]
                  - .25 * (data[im1*length+j] + data[ip1*length+j] +
                           data[i*length+jp1] + data[i*length+jm1]);
@@ -449,8 +450,8 @@ void SOR_blocked(vec_ptr v, long int itermax)
       for (jj = 0; jj < length; jj+=BLOCK_SIZE) {
         for (i = ii; i < ii+BLOCK_SIZE; i++) {
           for (j = jj; j < jj+BLOCK_SIZE; j++) {
-            im1 = (i-1)%length; ip1 = (i+1)%length;
-            jm1 = (j-1)%length; jp1 = (j+1)%length;
+            im1 = (i+length-1)%length; ip1 = (i+1)%length;
+            jm1 = (j+length-1)%length; jp1 = (j+1)%length;
             change = data[i*length+j]
                        - .25 * (data[im1*length+j] + data[ip1*length+j] +
                                 data[i*length+jp1] + data[i*length+jm1]);
@@ -496,13 +497,13 @@ void* thr_SOR_wrkr(void* t_arg)  // split the SOR on red-black
   //  0  1      25 26 27 28        52 53 54 55       79 80 81 82       106 107
   minrow = ((lfull * t_id) / NTHREADS) + 1;
   maxrow = ((lfull * (t_id+1)) / NTHREADS) - 2;
-
+  // printf("t%d %ld..%ld of %ld\n", t_id, minrow, maxrow, lfull);
   for(iters=0; iters<itermax; iters++) {
 
     for (i = minrow; i < maxrow; i++) {
       for (j = 0; j < len; j++) {
         im1 = i-1; ip1 = i+1;
-        jm1 = (j-1)%len; jp1 = (j+1)%len;
+        jm1 = (j+len-1)%len; jp1 = (j+1)%len;
         change = data[i*len+j]
              - .25 * (data[im1*len+j] + data[ip1*len+j] +
                       data[i*len+jp1] + data[i*len+jm1]);
@@ -512,19 +513,18 @@ void* thr_SOR_wrkr(void* t_arg)  // split the SOR on red-black
 
     rv = pthread_barrier_wait(&sor_barrier);
 
-    i1 = minrow;
+    i1 = minrow-1;
     im1 = (minrow+lfull-2) % lfull;
-    i2 = maxrow-1;
+    i2 = maxrow;
     ip1 = (maxrow+1) % lfull;
     for (j = 0; j < len; j++) {
-      data[im1*len+j] = data[i1*len+j];
-      data[ip1*len+j] = data[i2*len+j];
+      data[i1*len+j] = data[im1*len+j];
+      data[i2*len+j] = data[ip1*len+j];
     }  
 
     rv = pthread_barrier_wait(&sor_barrier);
   }
 }
-
 
 void threaded_SOR(vec_ptr v, long int itermax)
 {
