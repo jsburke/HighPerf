@@ -1,4 +1,4 @@
-function graph_combine(file)
+function graph_name(file)
 
 data = csvread(file,1,0);
 
