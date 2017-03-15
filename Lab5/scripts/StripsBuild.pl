@@ -30,8 +30,9 @@ if (!(-x $bin)) {
 # run a series of tests
 # harvest data
 #            ASIZE THREADS BLKSZ ITERS
-system("$bin   16     4      8    100");
-print "\n";
+$cmd = "$bin   16     4      8    100";
+print "$cmd\n";
+system($cmd);
 
 $ddir = "part4_data";
 if(!(-d $ddir)) {

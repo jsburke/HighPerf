@@ -13,7 +13,6 @@ long int ASIZE = 16;
 
 #define OPTIONS 4
 int BLOCK_SIZE = 8;
-int MAX_ITERS = 100;
 int NTHREADS = 4;
 
 #define MINVAL   0.0
@@ -44,10 +43,10 @@ double fRand(double fMin, double fMax);
 
 //////////////////  SOR Functions  ///////////////////////////
 
-void SOR(vec_ptr v);
-void SOR_ji(vec_ptr v);
-void SOR_blocked(vec_ptr v);
-void threaded_SOR(vec_ptr v);
+void SOR(vec_ptr v, long int itermax);
+void SOR_ji(vec_ptr v, long int itermax);
+void SOR_blocked(vec_ptr v, long int itermax);
+void threaded_SOR(vec_ptr v, long int itermax);
 
 ///////////////// vector stuff  //////////////////////////////
 
@@ -83,15 +82,16 @@ double measure_cps(void);
 /*****************************************************************************/
 int main(int argc, char *argv[])
 {
+  int MAX_ITERS = 100;
 
   if (argc != 5) {
     printf("must have 4 arguments\n");
     return 0;
   }
-  ASIZE  = strtol(argv[1], NULL, 10);
-  NTHREADS  = strtol(argv[2], NULL, 10);
+  ASIZE = strtol(argv[1], NULL, 10);
+  NTHREADS = strtol(argv[2], NULL, 10);
   BLOCK_SIZE = strtol(argv[3], NULL, 10);
-  MAX_ITERS = strtol(argv[3], NULL, 10);
+  MAX_ITERS = strtol(argv[4], NULL, 10);
 
   if (NTHREADS < 1) {
     printf("NTHREADS must be at least one\n");
@@ -115,8 +115,8 @@ int main(int argc, char *argv[])
 
   int OPTION;
   
-  struct timespec time1, time2;
-  struct timespec time_stamp[OPTIONS];
+  struct timespec t_beg, t_end;
+  double time_stamp[OPTIONS];
 
   long int i, j, k;
   long int time_sec, time_ns;
@@ -124,8 +124,8 @@ int main(int argc, char *argv[])
   char filename[255] = {0};
   FILE *fp;
 
-  sprintf(filename,"%s_T%d_S%ld_BS%d_I%d.csv",
-                          FILE_PREFIX, NTHREADS, ASIZE, BLOCK_SIZE, MAX_ITERS);
+  sprintf(filename,"%s_S%ld_T%d_BS%d_I%d.csv",
+                          FILE_PREFIX, ASIZE, NTHREADS, BLOCK_SIZE, MAX_ITERS);
   printf("Current File: %s\n", filename);
 
   // declare and initialize the vector structure
@@ -144,35 +144,35 @@ int main(int argc, char *argv[])
   //printf("\niter = %ld length = %ld OMEGA = %0.2f", i, BASE+(i+1)*DELTA, OMEGA);
   init_vector_rand(v0, ASIZE);
   //print_vector(v0);
-  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
-    SOR(v0);
-  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
-  time_stamp[OPTION] = diff(time1,time2);
+  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &t_beg);
+    SOR(v0, MAX_ITERS);
+  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &t_end);
+  time_stamp[OPTION] = ts_sec(diff(t_beg, t_end));
   //print_vector(v0);
 
   OPTION++;
   //printf("\niter = %ld length = %ld", i, BASE+(i+1)*DELTA);
   init_vector_rand(v0, ASIZE);
-  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
-    SOR_ji(v0);
-  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
-  time_stamp[OPTION] = diff(time1,time2);
+  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &t_beg);
+    SOR_ji(v0, MAX_ITERS);
+  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &t_end);
+  time_stamp[OPTION] = ts_sec(diff(t_beg, t_end));
 
   OPTION++;
   //printf("\niter = %ld length = %ld", i, BASE+(i+1)*DELTA);
   init_vector_rand(v0, ASIZE);
-  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
-    SOR_blocked(v0);
-  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
-  time_stamp[OPTION] = diff(time1,time2);
+  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &t_beg);
+    SOR_blocked(v0, MAX_ITERS);
+  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &t_end);
+  time_stamp[OPTION] = ts_sec(diff(t_beg, t_end));
 
   OPTION++;
   //printf("\niter = %ld length = %ld", i, BASE+(i+1)*DELTA);
   init_vector_rand(v0, ASIZE);
-  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
-    threaded_SOR(v0);
-  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
-  time_stamp[OPTION] = diff(time1,time2);
+  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &t_beg);
+    threaded_SOR(v0, MAX_ITERS);
+  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &t_end);
+  time_stamp[OPTION] = ts_sec(diff(t_beg, t_end));
 
   ///////////////////////////////////////////
   //
@@ -181,14 +181,13 @@ int main(int argc, char *argv[])
   ///////////////////////////////////////////
 
   fp = fopen(filename,"w");
-  fprintf(fp, "Size, ij, ji, blocked\n");
+  fprintf(fp, "Elems, ij, ji, blocked, strips\n");
 
   long int elements;
-  elements = ASIZE * ASIZE;
+  elements = ASIZE * ASIZE * MAX_ITERS;
   fprintf(fp, "%ld", elements);
   for (j = 0; j < OPTIONS; j++) {
-    double seconds = ((double) time_stamp[j].tv_sec)
-                   + ((double) time_stamp[j].tv_nsec)/1.0e9;
+    double seconds = time_stamp[j];
     fprintf(fp, ", %lf", CPS * seconds / ((double)elements));
     //fprintf(fp, ", %d", convergence[j][i]);
   }
@@ -362,7 +361,7 @@ int print_vector(vec_ptr v)
 
   len = v->len;
   printf("\n length = %ld", len);
-  for (i = 0; i < len; i++) {
+  for (i = 0; i < len+2*NTHREADS; i++) {
     printf("\n");
     for (j = 0; j < len; j++)
       printf("%.4f ", (data_t)(v->data[i*len+j]));
@@ -385,7 +384,7 @@ double fRand(double fMin, double fMax)
 /************************************/
 
 /* SOR */
-void SOR(vec_ptr v)
+void SOR(vec_ptr v, long int itermax)
 {
   long int i, j;
   long int im1, ip1, jm1, jp1;
@@ -394,7 +393,7 @@ void SOR(vec_ptr v)
   double change;
   int iters;
 
-  for(iters=0; iters<MAX_ITERS; iters++) {
+  for(iters=0; iters<itermax; iters++) {
     for (i = 0; i < length; i++) {
       for (j = 0; j < length; j++) {
         im1 = (i-1)%length; ip1 = (i+1)%length;
@@ -410,7 +409,7 @@ void SOR(vec_ptr v)
 }
 
 /* SOR with reversed indices */
-void SOR_ji(vec_ptr v)
+void SOR_ji(vec_ptr v, long int itermax)
 {
   long int i, j;
   long int im1, ip1, jm1, jp1;
@@ -419,7 +418,7 @@ void SOR_ji(vec_ptr v)
   double change;
   int iters;
 
-  for(iters=0; iters<MAX_ITERS; iters++) {
+  for(iters=0; iters<itermax; iters++) {
     for (j = 0; j < length; j++) {
       for (i = 0; i < length; i++) {
         im1 = (i-1)%length; ip1 = (i+1)%length;
@@ -435,7 +434,7 @@ void SOR_ji(vec_ptr v)
 }
 
 /* SOR w/ blocking */
-void SOR_blocked(vec_ptr v)
+void SOR_blocked(vec_ptr v, long int itermax)
 {
   long int i, j, ii, jj;
   long int im1, ip1, jm1, jp1;
@@ -445,7 +444,7 @@ void SOR_blocked(vec_ptr v)
   int iters = 0;
   int k;
 
-  for(iters=0; iters<MAX_ITERS; iters++) {
+  for(iters=0; iters<itermax; iters++) {
     for (ii = 0; ii < length; ii+=BLOCK_SIZE) {
       for (jj = 0; jj < length; jj+=BLOCK_SIZE) {
         for (i = ii; i < ii+BLOCK_SIZE; i++) {
@@ -469,6 +468,7 @@ typedef struct {
   int      t_id;
   long int len;
   data_t   *data;
+  long int imax;
 } sor_data;
 
 pthread_barrier_t sor_barrier;
@@ -480,6 +480,9 @@ void* thr_SOR_wrkr(void* t_arg)  // split the SOR on red-black
   int t_id = thread_arg -> t_id;
   long int len = thread_arg -> len;
   data_t *data = thread_arg -> data;
+  long int itermax = thread_arg -> imax;
+
+  long lfull = len+2*NTHREADS;
 
   long int i, j;
   long int im1, ip1, jm1, jp1;
@@ -489,14 +492,16 @@ void* thr_SOR_wrkr(void* t_arg)  // split the SOR on red-black
 
   long int i1, i2, minrow, maxrow;
 
-  minrow = ((len * t_id) / NTHREADS) + (t_id+1);
-  maxrow = ((len * (t_id+1)) / NTHREADS) + (t_id+1);
+  // NTHREADS=4, len=100
+  //  0  1      25 26 27 28        52 53 54 55       79 80 81 82       106 107
+  minrow = ((lfull * t_id) / NTHREADS) + 1;
+  maxrow = ((lfull * (t_id+1)) / NTHREADS) - 2;
 
-  for(iters=0; iters<MAX_ITERS; iters++) {
+  for(iters=0; iters<itermax; iters++) {
 
     for (i = minrow; i < maxrow; i++) {
       for (j = 0; j < len; j++) {
-        im1 = (i-1)%len; ip1 = (i+1)%len;
+        im1 = i-1; ip1 = i+1;
         jm1 = (j-1)%len; jp1 = (j+1)%len;
         change = data[i*len+j]
              - .25 * (data[im1*len+j] + data[ip1*len+j] +
@@ -508,9 +513,9 @@ void* thr_SOR_wrkr(void* t_arg)  // split the SOR on red-black
     rv = pthread_barrier_wait(&sor_barrier);
 
     i1 = minrow;
-    im1 = (minrow+len-2) % len;
+    im1 = (minrow+lfull-2) % lfull;
     i2 = maxrow-1;
-    ip1 = (maxrow+1) % len;
+    ip1 = (maxrow+1) % lfull;
     for (j = 0; j < len; j++) {
       data[im1*len+j] = data[i1*len+j];
       data[ip1*len+j] = data[i2*len+j];
@@ -521,7 +526,7 @@ void* thr_SOR_wrkr(void* t_arg)  // split the SOR on red-black
 }
 
 
-void threaded_SOR(vec_ptr v)
+void threaded_SOR(vec_ptr v, long int itermax)
 {
   int t;
   pthread_t threads[NTHREADS];
@@ -531,10 +536,11 @@ void threaded_SOR(vec_ptr v)
   data_t *data = get_vec_start(v);
 
   pthread_barrier_init(&sor_barrier, NULL, NTHREADS);
-  for (t=0; t<NTHREADS;t++) {
+  for (t=0; t<NTHREADS; t++) {
     thr_args[t].t_id = t;
     thr_args[t].len = length;
     thr_args[t].data = data;
+    thr_args[t].imax = itermax;
 
     rv = pthread_create(&threads[t], NULL, thr_SOR_wrkr, (void*) &thr_args[t]);
   }
