@@ -2,6 +2,8 @@
 //
 //	Code to compare different methods of SOR
 //
+//  clear; gcc -O1 -pthread -o SOR SOR_comp.c -lm -lrt
+//
 //////////////////////////////////////////////
 
 #include <stdio.h>
