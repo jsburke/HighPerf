@@ -45,6 +45,7 @@ system("$bin 9 41 0.10 10");
 print "\n";
 
 system("$bin 15 50 0.09 10");
+print "\n";
 
 system("$bin 15 75 0.08 10");
 print "\n";
@@ -61,6 +62,6 @@ if ($ncsv > 0) {
   die "$myname: No .csv output files were produced.\n";
 }
 
-system("rm $bin");
+# system("rm $bin");
 
 print "test_SOR_OMEGA tests complete\n";
