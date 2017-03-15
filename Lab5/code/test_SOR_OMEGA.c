@@ -15,7 +15,7 @@
 
 #define TOL 0.00001   // tolerance
 
-#define O_ITERS 100  // # of OMEGA values to be tested
+#define O_ITERS 10  // # of OMEGA values to be tested
 //  #define PER_O_ITERS 10    // trials per OMEGA value
 double OMEGA;     // OMEGA base - first OMEGA tested
 #define OMEGA_INC 0.004  // OMEGA increment for each O_ITERS
