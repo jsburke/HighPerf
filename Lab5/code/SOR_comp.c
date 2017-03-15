@@ -75,7 +75,7 @@ double measure_cps(void);
 double omega_calc(int elements);
 
 void SOR_basic(vec_ptr vec, int *iterations);
-void SOR_red_black(vec_ptr vec);
+void SOR_red_black(vec_ptr vec, int *iterations);
 //void SOR_strip(vec_ptr vec);
 
 int main(int argc, char *argv[])
@@ -147,7 +147,7 @@ int main(int argc, char *argv[])
   	elements = BASE+(i+1)*DELTA;
   	set_vec_length(v0, elements);
     init_vector_rand(v0, elements);
-    OMEGA = omega_calc(elements);
+    OMEGA = omega_calc(elements * elements);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
     SOR_basic(v0,iterations);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
@@ -163,9 +163,9 @@ int main(int argc, char *argv[])
   	elements = BASE+(i+1)*DELTA;
   	set_vec_length(v0, elements);
     init_vector_rand(v0, elements);
-    OMEGA = omega_calc(elements);
+    OMEGA = omega_calc(elements * elements);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
-    SOR_red_black(v0);
+    SOR_red_black(v0,iterations);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
     time_stamp[OPTION][i] = ts_diff(time1, time2);
   }  
@@ -179,7 +179,7 @@ int main(int argc, char *argv[])
   /////////////////////////////////////
 
   fp = fopen(filename,"w");
-  fprintf(fp, "Elements, Basic");
+  fprintf(fp, "Length, Basic, Red-Black");
 
   for(i = 0; i < ITERS; i++)
   {
@@ -479,12 +479,13 @@ void* SOR_rb_calc(void* t_arg)  // split the SOR on red-black
     pthread_exit(NULL);
 }
 
-void SOR_red_black(vec_ptr v)
+void SOR_red_black(vec_ptr v, int *iterations)
 {
 	pthread_t threads[RB_THREADS];
 	rb_data t_rb_args[RB_THREADS];
 	double  mean_change, accum;
 	int     pt_ret, i, j, k;
+	int 	iters = 0;
 
 	long int len   = get_vec_length(v);
 	data_t   *data = get_vec_start(v);
@@ -492,6 +493,8 @@ void SOR_red_black(vec_ptr v)
 	//printf("\nRB start");
 
 	do{  // mean_change > TOL
+
+		iters++;
 		// set up and launch threads
 		for(i = 0; i < RB_THREADS; i++){
 			t_rb_args[i].t_id       = i;
@@ -520,5 +523,8 @@ void SOR_red_black(vec_ptr v)
 		for(k = 0; k < RB_THREADS; k++) accum += t_rb_args[k].acc_change;
 		mean_change = accum / ((double) len * len);
 
-	  }while((mean_change > (double) TOL) || (SR_BREAK != 0)) ;
+	  }while((mean_change > (double) TOL) || (SR_BREAK != 0));
+
+	  *iterations = iters;
 }
+
