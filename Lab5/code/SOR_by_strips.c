@@ -11,7 +11,7 @@ double CPS = 2.9e9;       // Cycles/sec - adjusted by measure_cps()
 
 long int ASIZE = 16;
 
-#define OPTIONS 3
+#define OPTIONS 4
 int BLOCK_SIZE = 8;
 int MAX_ITERS = 100;
 int NTHREADS = 4;
@@ -47,6 +47,7 @@ double fRand(double fMin, double fMax);
 void SOR(vec_ptr v);
 void SOR_ji(vec_ptr v);
 void SOR_blocked(vec_ptr v);
+void threaded_SOR(vec_ptr v);
 
 ///////////////// vector stuff  //////////////////////////////
 
@@ -162,6 +163,14 @@ int main(int argc, char *argv[])
   init_vector_rand(v0, ASIZE);
   clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
     SOR_blocked(v0);
+  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
+  time_stamp[OPTION] = diff(time1,time2);
+
+  OPTION++;
+  //printf("\niter = %ld length = %ld", i, BASE+(i+1)*DELTA);
+  init_vector_rand(v0, ASIZE);
+  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
+    threaded_SOR(v0);
   clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
   time_stamp[OPTION] = diff(time1,time2);
 
@@ -293,7 +302,7 @@ vec_ptr new_vec(long int len)
 
   /* Allocate and declare array */
   if (len > 0) {
-    data_t *data = (data_t *) calloc(len*len, sizeof(data_t));
+    data_t *data = (data_t *) calloc(len*(len+2*NTHREADS), sizeof(data_t));
     if (!data) {
 	  free((void *) result);
 	  printf("\n COULDN'T ALLOCATE STORAGE \n");
@@ -326,7 +335,7 @@ int init_vector(vec_ptr v, long int len)
 
   if (len > 0) {
     v->len = len;
-    for (i = 0; i < len*len; i++) v->data[i] = (data_t)(i);
+    for (i = 0; i < len*(len+2*NTHREADS); i++) v->data[i] = (data_t)(i);
     return 1;
   }
   else return 0;
@@ -339,7 +348,7 @@ int init_vector_rand(vec_ptr v, long int len)
 
   if (len > 0) {
     v->len = len;
-    for (i = 0; i < len*len; i++)
+    for (i = 0; i < len*(len+2*NTHREADS); i++)
       v->data[i] = (data_t)(fRand((double)(MINVAL),(double)(MAXVAL)));
     return 1;
   }
@@ -453,4 +462,83 @@ void SOR_blocked(vec_ptr v)
     }
   }
   //printf("\n iters = %d", iters);
+}
+
+
+typedef struct {
+  int      t_id;
+  long int len;
+  data_t   *data;
+} sor_data;
+
+pthread_barrier_t sor_barrier;
+
+void* thr_SOR_wrkr(void* t_arg)  // split the SOR on red-black
+{
+  //  thread struct
+  sor_data * thread_arg = (sor_data *) t_arg;
+  int t_id = thread_arg -> t_id;
+  long int len = thread_arg -> len;
+  data_t *data = thread_arg -> data;
+
+  long int i, j;
+  long int im1, ip1, jm1, jp1;
+  double change;
+  int iters;
+  int rv;
+
+  long int i1, i2, minrow, maxrow;
+
+  minrow = ((len * t_id) / NTHREADS) + (t_id+1);
+  maxrow = ((len * (t_id+1)) / NTHREADS) + (t_id+1);
+
+  for(iters=0; iters<MAX_ITERS; iters++) {
+
+    for (i = minrow; i < maxrow; i++) {
+      for (j = 0; j < len; j++) {
+        im1 = (i-1)%len; ip1 = (i+1)%len;
+        jm1 = (j-1)%len; jp1 = (j+1)%len;
+        change = data[i*len+j]
+             - .25 * (data[im1*len+j] + data[ip1*len+j] +
+                      data[i*len+jp1] + data[i*len+jm1]);
+        data[i*len+j] -= change * OMEGA;
+      }
+    }
+
+    rv = pthread_barrier_wait(&sor_barrier);
+
+    i1 = minrow;
+    im1 = (minrow+len-2) % len;
+    i2 = maxrow-1;
+    ip1 = (maxrow+1) % len;
+    for (j = 0; j < len; j++) {
+      data[im1*len+j] = data[i1*len+j];
+      data[ip1*len+j] = data[i2*len+j];
+    }  
+
+    rv = pthread_barrier_wait(&sor_barrier);
+  }
+}
+
+
+void threaded_SOR(vec_ptr v)
+{
+  int t;
+  pthread_t threads[NTHREADS];
+  sor_data thr_args[NTHREADS];
+  int     rv;
+  long int length = get_vec_length(v);
+  data_t *data = get_vec_start(v);
+
+  pthread_barrier_init(&sor_barrier, NULL, NTHREADS);
+  for (t=0; t<NTHREADS;t++) {
+    thr_args[t].t_id = t;
+    thr_args[t].len = length;
+    thr_args[t].data = data;
+
+    rv = pthread_create(&threads[t], NULL, thr_SOR_wrkr, (void*) &thr_args[t]);
+  }
+  for (t=0; t<NTHREADS;t++) {
+    rv = pthread_join(threads[t], NULL);
+  }
 }

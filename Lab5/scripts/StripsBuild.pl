@@ -22,7 +22,7 @@ if(!(-f $src)) {
 }
 
 print "compiling $src to $bin\n";
-system("gcc -O2 $src -lrt -lm -o $bin");
+system("gcc -O2 $src -lrt -lm -lpthread -o $bin");
 if (!(-x $bin)) {
   die "$myname: No binary $bin, compile error?\n";
 }
