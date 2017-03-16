@@ -12,7 +12,6 @@
 #include <math.h>
 #include <pthread.h>
 
-#define GIG 1000000000
 double CPS = 2.9e9;		// Cycles/sec - adjusted by measure_cps()
 
 #define OPTIONS 2
@@ -29,7 +28,6 @@ typedef double data_t;
 int SR_BREAK = 0;     // exit from rb test
 double rb_change;
 pthread_barrier_t rb_barr;
-double rb_change;
 
 typedef struct{
 	int      t_id;
@@ -117,7 +115,7 @@ int main(int argc, char *argv[])
 
   //  set up for measurement
   struct timespec time1, time2;
-  struct timespec time_stamp[OPTIONS][ITERS+1];
+  double time_stamp[OPTIONS][ITERS+1];
   int its[OPTIONS][ITERS+1];
   int convergence[OPTIONS][ITERS+1];
   int *iterations;
@@ -155,9 +153,8 @@ int main(int argc, char *argv[])
     clock_gettime(CLOCK_REALTIME, &time1);
     SOR_basic(v0,iterations);
     clock_gettime(CLOCK_REALTIME, &time2);
-    time_stamp[OPTION][i] = ts_diff(time1, time2);
+    time_stamp[OPTION][i] = ts_sec(ts_diff(time1, time2));
     its[OPTION][i] = *iterations;
-    its_for_rbt = *iterations;
   } 
 
   printf("\nBASIC DONE\n"); 
@@ -171,9 +168,10 @@ int main(int argc, char *argv[])
     init_vector_rand(v0, ASIZE);
     OMEGA = omega_calc(ASIZE * ASIZE);
     clock_gettime(CLOCK_REALTIME, &time1);
+    its_for_rbt = its[0][i];
     SOR_red_black(v0,iterations);
     clock_gettime(CLOCK_REALTIME, &time2);
-    time_stamp[OPTION][i] = ts_diff(time1, time2);
+    time_stamp[OPTION][i] = ts_sec(ts_diff(time1, time2));
     its[OPTION][i] = *iterations;
   }  
 
@@ -187,7 +185,7 @@ int main(int argc, char *argv[])
 
   fp = fopen(filename,"w");
   fprintf(fp, "Length, Basic, Red-Black\n");
-  // printf("CPS == %g\n", CPS);
+  printf("CPS == %g\n", CPS);
   for(i = 0; i < ITERS; i++) {
     ASIZE = BASE+(i+1)*DELTA;
     fprintf(fp, "%d", ASIZE);
@@ -195,9 +193,9 @@ int main(int argc, char *argv[])
       long int elements;
       double seconds;
       elements = its[j][i] * ASIZE * ASIZE;
-      seconds =  ((double)(time_stamp[j][i].tv_sec))
-                       + ((double)(time_stamp[j][i].tv_nsec)) / 1.0e9;
-      // printf("ASIZE %d is %ld elements, took %g sec\n", ASIZE, elements, seconds);
+      seconds =  time_stamp[j][i];
+      printf("ASIZE %d * %d its is %ld elements, took %g sec\n", ASIZE,
+                                              its[j][i], elements, seconds);
       fprintf(fp, ", %g", CPS * seconds / ((double) elements));
     }
     fprintf(fp, "\n");
@@ -399,7 +397,7 @@ double omega_calc(int elements)
 
 void SOR_basic(vec_ptr v, int *iterations)
 {
-  long int i, j;
+  long int i, j, row_offset;
   long int length = get_vec_length(v);
   data_t *data = get_vec_start(v);
   double change, mean_change = 100;   // start w/ something big
@@ -409,12 +407,13 @@ void SOR_basic(vec_ptr v, int *iterations)
     iters++;
     mean_change = 0;
     for (i = 1; i < length-1; i++)  {
+      row_offset = i * length;
       for (j = 1; j < length-1; j++) {
-        change = data[i*length+j] - .25 * (data[(i-1)*length+j] +
-            data[(i+1)*length+j] +
-            data[i*length+j+1] +
-            data[i*length+j-1]);
-        data[i*length+j] -= change * OMEGA;
+        change = data[row_offset+j] - .25 * (data[row_offset-length+j] +
+            data[row_offset+length+j] +
+            data[row_offset+j+1] +
+            data[row_offset+j-1]);
+        data[row_offset+j] -= change * OMEGA;
         if (change < 0) {
           change = -change;
         }
@@ -444,7 +443,6 @@ void* SOR_rb_calc(void* t_arg)  // split the SOR on red-black
   t_id     = thread_arg -> t_id;
   len      = thread_arg -> len;
   data      = thread_arg -> data;
-  iters      = thread_arg -> iters;
 
   //  Begin bulk of SOR calculations
   //  Barriers used to make sure things don't stomp too much
@@ -457,10 +455,7 @@ void* SOR_rb_calc(void* t_arg)  // split the SOR on red-black
 
   double local_change, change;
 
-  do
-  {
-    iters++;
-
+  for (iters = 0; iters < its_for_rbt; iters++) {
     bc = pthread_barrier_wait(&rb_barr);
     if(bc != 0 && bc != PTHREAD_BARRIER_SERIAL_THREAD)
     {
@@ -468,7 +463,7 @@ void* SOR_rb_calc(void* t_arg)  // split the SOR on red-black
       exit(-1);
     }
 
-    rb_change    = 0;
+    rb_change    = 0; // %%% two writers!
     local_change = 0;
 
     for(i = 1; i < len - 1; i++)
@@ -497,7 +492,7 @@ void* SOR_rb_calc(void* t_arg)  // split the SOR on red-black
       exit(-1);
     }
 
-    rb_change += local_change;
+    rb_change += local_change; // %%% two writers!
 
     bc = pthread_barrier_wait(&rb_barr);
     if(bc != 0 && bc != PTHREAD_BARRIER_SERIAL_THREAD)
@@ -505,10 +500,7 @@ void* SOR_rb_calc(void* t_arg)  // split the SOR on red-black
       printf("\n\nERROR: Could not wait on barrier\n\n");
       exit(-1);
     }
-
-  } while(iters < its_for_rbt);
-  // }while((rb_change/len_sq) > (double) TOL);
-
+  }
   thread_arg -> iters = iters;
 
   pthread_exit(NULL);

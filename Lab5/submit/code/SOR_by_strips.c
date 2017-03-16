@@ -9,7 +9,7 @@
 
 double CPS = 2.9e9;       // Cycles/sec - adjusted by measure_cps()
 
-long int ASIZE = 16;
+long int MAX_ASIZE = 16;
 
 #define OPTIONS 5
 int BLOCK_SIZE = 8;
@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
     printf("must have 4 arguments\n");
     return 0;
   }
-  ASIZE = strtol(argv[1], NULL, 10);
+  MAX_ASIZE = strtol(argv[1], NULL, 10);
   NTHREADS = strtol(argv[2], NULL, 10);
   BLOCK_SIZE = strtol(argv[3], NULL, 10);
   MAX_ITERS = strtol(argv[4], NULL, 10);
@@ -104,8 +104,8 @@ int main(int argc, char *argv[])
     return 0;
   }
 
-  if (ASIZE < NTHREADS) {
-    printf("ASIZE must be at least as large as NTHREADS\n");
+  if (MAX_ASIZE < NTHREADS) {
+    printf("MAX_ASIZE must be at least as large as NTHREADS\n");
     return 0;
   }
 
@@ -119,24 +119,29 @@ int main(int argc, char *argv[])
     return 0;
   }
 
-  int OPTION;
+  int OPTION, SIZES;
+  long int ASIZE;
+
+  for(SIZES=0, ASIZE = NTHREADS;
+      ASIZE <= MAX_ASIZE;
+      ASIZE = (ASIZE*5)/4, SIZES++) { }
   
   struct timespec t_beg, t_end;
-  double time_stamp[OPTIONS];
+  double time_stamp[OPTIONS][SIZES];
 
-  long int i, j, k;
+  long int i, j;
   long int time_sec, time_ns;
 
   char filename[255] = {0};
   FILE *fp;
 
   sprintf(filename,"%s_S%ld_T%d_BS%d_I%d.csv",
-                          FILE_PREFIX, ASIZE, NTHREADS, BLOCK_SIZE, MAX_ITERS);
+                          FILE_PREFIX, MAX_ASIZE, NTHREADS, BLOCK_SIZE, MAX_ITERS);
   printf("Current File: %s\n", filename);
 
   // declare and initialize the vector structure
-  vec_ptr v0 = new_vec(ASIZE);
-  set_vec_length(v0, ASIZE);
+  vec_ptr v0 = new_vec(MAX_ASIZE);
+  set_vec_length(v0, MAX_ASIZE);
 
   measure_cps();
 
@@ -146,47 +151,49 @@ int main(int argc, char *argv[])
   //
   //////////////////////////////////////////
 
-  OPTION = 0;
-  //printf("\niter = %ld length = %ld OMEGA = %0.2f", i, BASE+(i+1)*DELTA, OMEGA);
-  init_vector_rand(v0, ASIZE);
-  //print_vector(v0);
-  clock_gettime(TIMETYPE, &t_beg);
-    SOR(v0, MAX_ITERS);
-  clock_gettime(TIMETYPE, &t_end);
-  time_stamp[OPTION] = ts_sec(diff(t_beg, t_end));
-  //print_vector(v0);
+  for(i=0, ASIZE = NTHREADS; ASIZE <= MAX_ASIZE; ASIZE = (ASIZE*5)/4, i++) {
+    OPTION = 0;
+    //printf("\niter = %ld length = %ld OMEGA = %0.2f", i, BASE+(i+1)*DELTA, OMEGA);
+    init_vector_rand(v0, ASIZE);
+    //print_vector(v0);
+    clock_gettime(TIMETYPE, &t_beg);
+      SOR(v0, MAX_ITERS);
+    clock_gettime(TIMETYPE, &t_end);
+    time_stamp[OPTION][i] = ts_sec(diff(t_beg, t_end));
+    //print_vector(v0);
 
-  OPTION++;
-  //printf("\niter = %ld length = %ld", i, BASE+(i+1)*DELTA);
-  init_vector_rand(v0, ASIZE);
-  clock_gettime(TIMETYPE, &t_beg);
-    SOR_ji(v0, MAX_ITERS);
-  clock_gettime(TIMETYPE, &t_end);
-  time_stamp[OPTION] = ts_sec(diff(t_beg, t_end));
+    OPTION++;
+    //printf("\niter = %ld length = %ld", i, BASE+(i+1)*DELTA);
+    init_vector_rand(v0, ASIZE);
+    clock_gettime(TIMETYPE, &t_beg);
+      SOR_ji(v0, MAX_ITERS);
+    clock_gettime(TIMETYPE, &t_end);
+    time_stamp[OPTION][i] = ts_sec(diff(t_beg, t_end));
 
-  OPTION++;
-  //printf("\niter = %ld length = %ld", i, BASE+(i+1)*DELTA);
-  init_vector_rand(v0, ASIZE);
-  clock_gettime(TIMETYPE, &t_beg);
-    SOR_blocked(v0, MAX_ITERS);
-  clock_gettime(TIMETYPE, &t_end);
-  time_stamp[OPTION] = ts_sec(diff(t_beg, t_end));
+    OPTION++;
+    //printf("\niter = %ld length = %ld", i, BASE+(i+1)*DELTA);
+    init_vector_rand(v0, ASIZE);
+    clock_gettime(TIMETYPE, &t_beg);
+      SOR_blocked(v0, MAX_ITERS);
+    clock_gettime(TIMETYPE, &t_end);
+    time_stamp[OPTION][i] = ts_sec(diff(t_beg, t_end));
 
-  OPTION++;
-  //printf("\niter = %ld length = %ld", i, BASE+(i+1)*DELTA);
-  init_vector_rand(v0, ASIZE);
-  clock_gettime(TIMETYPE, &t_beg);
-    thr_SOR_1(v0, MAX_ITERS);
-  clock_gettime(TIMETYPE, &t_end);
-  time_stamp[OPTION] = ts_sec(diff(t_beg, t_end));
+    OPTION++;
+    //printf("\niter = %ld length = %ld", i, BASE+(i+1)*DELTA);
+    init_vector_rand(v0, ASIZE);
+    clock_gettime(TIMETYPE, &t_beg);
+      thr_SOR_1(v0, MAX_ITERS);
+    clock_gettime(TIMETYPE, &t_end);
+    time_stamp[OPTION][i] = ts_sec(diff(t_beg, t_end));
 
-  OPTION++;
-  //printf("\niter = %ld length = %ld", i, BASE+(i+1)*DELTA);
-  init_vector_rand(v0, ASIZE);
-  clock_gettime(TIMETYPE, &t_beg);
-    thr_SOR_2(v0, MAX_ITERS);
-  clock_gettime(TIMETYPE, &t_end);
-  time_stamp[OPTION] = ts_sec(diff(t_beg, t_end));
+    OPTION++;
+    //printf("\niter = %ld length = %ld", i, BASE+(i+1)*DELTA);
+    init_vector_rand(v0, ASIZE);
+    clock_gettime(TIMETYPE, &t_beg);
+      thr_SOR_2(v0, MAX_ITERS);
+    clock_gettime(TIMETYPE, &t_end);
+    time_stamp[OPTION][i] = ts_sec(diff(t_beg, t_end));
+  }
 
   ///////////////////////////////////////////
   //
@@ -198,17 +205,18 @@ int main(int argc, char *argv[])
   fprintf(fp, "Elems, ij, ji, blocked, strips, naive\n");
 
   long int elements;
-  elements = ASIZE * ASIZE * MAX_ITERS;
-  fprintf(fp, "%ld", elements);
-  printf("%ld", elements);
-  for (j = 0; j < OPTIONS; j++) {
-    double seconds = time_stamp[j];
-    fprintf(fp, ", %lf", CPS * seconds / ((double)elements));
-    printf(", %lf", CPS * seconds / ((double)elements));
+  for(i=0, ASIZE = NTHREADS; ASIZE <= MAX_ASIZE; ASIZE = (ASIZE*5)/4, i++) {
+    elements = ASIZE * ASIZE * MAX_ITERS;
+    fprintf(fp, "%ld", ASIZE);
+    printf("%ld", ASIZE);
+    for (j = 0; j < OPTIONS; j++) {
+      double seconds = time_stamp[j][i];
+      fprintf(fp, ", %lf", CPS * seconds / ((double)elements));
+      printf(", %lf", CPS * seconds / ((double)elements));
+    }
+    fprintf(fp, "\n");
+    printf("\n");
   }
-  fprintf(fp, "\n");
-  printf("\n");
-
   fclose(fp);
   
 }/* end main */
@@ -511,7 +519,7 @@ void* thr_SOR_wrkr1(void* t_arg)  // split the SOR on red-black
   //  0  1      25 26 27 28        52 53 54 55       79 80 81 82       106 107
   minrow = ((lfull * t_id) / NTHREADS) + 1;
   maxrow = ((lfull * (t_id+1)) / NTHREADS) - 2;
-   printf("t%d %ld..%ld of %ld\n", t_id, minrow, maxrow, lfull);
+  // printf("t%d %ld..%ld of %ld\n", t_id, minrow, maxrow, lfull);
   for(iters=0; iters<itermax; iters++) {
 
     for (i = minrow; i < maxrow; i++) {
@@ -587,7 +595,7 @@ void* thr_SOR_wrkr2(void* t_arg)  // split the SOR on red-black
   //  0      24 25      49 50       74 75       99
   minrow = (len * t_id) / NTHREADS;
   maxrow = (len * (t_id+1)) / NTHREADS;
-  printf("t%d %ld..%ld of %ld\n", t_id, minrow, maxrow, len);
+  // printf("t%d %ld..%ld of %ld\n", t_id, minrow, maxrow, len);
   for(iters=0; iters<itermax; iters++) {
     for (i = minrow; i < maxrow; i++) {
       for (j = 0; j < len; j++) {
