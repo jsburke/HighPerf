@@ -1,0 +1,10 @@
+#!/bin/sh
+# Copy the source code to the submit directory
+
+cp \
+   test_SOR_OMEGA.c \
+   test_SOR.c \
+   test_pt.c \
+   SOR_comp.c \
+   SOR_by_strips.c \
+   ../submit/code
