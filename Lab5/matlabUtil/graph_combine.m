@@ -4,7 +4,9 @@
 % * In "Current Folder" pane (upper-left) go into the directory containing this script
 % * In the "Command Window" (bottom-right) type a comand like:
 %
-%    graph_combine('../code/part4_data/
+%    graph_combine('../code/part4_data/p2_SOR_S100_T4_BS8_I100.csv');
+%
+%
 function graph_combine(file)
 
 data = csvread(file,1,0);
