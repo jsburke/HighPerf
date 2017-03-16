@@ -207,8 +207,8 @@ int main(int argc, char *argv[])
   long int elements;
   for(i=0, ASIZE = NTHREADS; ASIZE <= MAX_ASIZE; ASIZE = (ASIZE*5)/4, i++) {
     elements = ASIZE * ASIZE * MAX_ITERS;
-    fprintf(fp, "%ld", elements);
-    printf("%ld", elements);
+    fprintf(fp, "%ld", ASIZE);
+    printf("%ld", ASIZE);
     for (j = 0; j < OPTIONS; j++) {
       double seconds = time_stamp[j][i];
       fprintf(fp, ", %lf", CPS * seconds / ((double)elements));

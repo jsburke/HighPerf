@@ -30,7 +30,7 @@ if (!(-x $bin)) {
 # run a series of tests
 # harvest data
 #            ASIZE THREADS BLKSZ ITERS
-$cmd = "$bin  100     4      8    100";
+$cmd = "$bin  400     8      8    100";
 print "$cmd\n";
 system($cmd);
 
