@@ -1,6 +1,6 @@
-//////////////////////////////////////////////
+// -*- C++ -*- ////////////////////////////////
 //
-//	Code to compare different methods of SOR
+//	Code to compare basic SOR to a 2-thread red-black
 //
 //  clear; gcc -O1 -pthread -o SOR SOR_comp.c -lm -lrt
 //
@@ -16,7 +16,8 @@
 double CPS = 2.9e9;		// Cycles/sec - adjusted by measure_cps()
 
 #define OPTIONS 2
-double  OMEGA;
+double  OMEGA = 1.5;
+int its_for_rbt = 100;
 
 typedef double data_t;
 
@@ -85,10 +86,10 @@ void SOR_red_black(vec_ptr vec, int *iterations);
 
 int main(int argc, char *argv[])
 {
-	// handle command line
-	int BASE, DELTA, ITERS;
+  // handle command line
+  int BASE, DELTA, ITERS;
 
-	if(argc != 4)
+  if(argc != 4)
   {
     printf("must have four arguments\n");
     return 0;
@@ -98,20 +99,17 @@ int main(int argc, char *argv[])
   DELTA  = strtol(argv[2], NULL, 10);
   ITERS  = strtol(argv[3], NULL, 10);
   
-  if(BASE <= 0)
-  {
+  if(BASE <= 0) {
     printf("BASE must be greater than zero\n");
     return 0;
   }
 
-  if(DELTA <= 0)
-  {
+  if(DELTA <= 0) {
     printf("DELTA must be at least one\n");
     return 0;
   }
 
-    if(ITERS <= 0)
-  {
+  if(ITERS <= 0) {
     printf("ITERS must be at least one\n");
     return 0;
   }
@@ -120,6 +118,7 @@ int main(int argc, char *argv[])
   //  set up for measurement
   struct timespec time1, time2;
   struct timespec time_stamp[OPTIONS][ITERS+1];
+  int its[OPTIONS][ITERS+1];
   int convergence[OPTIONS][ITERS+1];
   int *iterations;
 
@@ -131,7 +130,7 @@ int main(int argc, char *argv[])
   char filename[255] = {0};
   FILE *fp;
 
-  sprintf(filename,"%sB%d_D%d_I%d_O%lf.csv", FILE_PREFIX, BASE, DELTA, ITERS, OMEGA);
+  sprintf(filename,"%sB%d_D%d_I%d.csv", FILE_PREFIX, BASE, DELTA, ITERS);
   printf("Current File: %s\n", filename);
 
   // declare and initialize the vector structure
@@ -146,33 +145,36 @@ int main(int argc, char *argv[])
 
   measure_cps();
   int OPTION = 0;
-  int elements = 0;
+  int ASIZE;
   for(i = 0; i < ITERS; i++)
   {
-  	elements = BASE+(i+1)*DELTA;
-  	set_vec_length(v0, elements);
-    init_vector_rand(v0, elements);
-    OMEGA = omega_calc(elements * elements);
+    ASIZE = BASE+(i+1)*DELTA;
+    set_vec_length(v0, ASIZE);
+    init_vector_rand(v0, ASIZE);
+    OMEGA = omega_calc(ASIZE * ASIZE);
     clock_gettime(CLOCK_REALTIME, &time1);
     SOR_basic(v0,iterations);
     clock_gettime(CLOCK_REALTIME, &time2);
     time_stamp[OPTION][i] = ts_diff(time1, time2);
+    its[OPTION][i] = *iterations;
+    its_for_rbt = *iterations;
   } 
 
   printf("\nBASIC DONE\n"); 
 
   OPTION++;
-  elements = 0;
+  ASIZE = 0;
   for(i = 0; i < ITERS; i++)
   {
-  	elements = BASE+(i+1)*DELTA;
-  	set_vec_length(v0, elements);
-    init_vector_rand(v0, elements);
-    OMEGA = omega_calc(elements * elements);
+    ASIZE = BASE+(i+1)*DELTA;
+    set_vec_length(v0, ASIZE);
+    init_vector_rand(v0, ASIZE);
+    OMEGA = omega_calc(ASIZE * ASIZE);
     clock_gettime(CLOCK_REALTIME, &time1);
     SOR_red_black(v0,iterations);
     clock_gettime(CLOCK_REALTIME, &time2);
     time_stamp[OPTION][i] = ts_diff(time1, time2);
+    its[OPTION][i] = *iterations;
   }  
 
   printf("\nRED BLACK DONE\n");
@@ -184,19 +186,22 @@ int main(int argc, char *argv[])
   /////////////////////////////////////
 
   fp = fopen(filename,"w");
-  fprintf(fp, "Length, Basic, Red-Black");
-
-  for(i = 0; i < ITERS; i++)
-  {
-  	elements = BASE+(i+1)*DELTA;
-  	fprintf(fp, "\n%d,", elements);
-  	for(j = 0; j < OPTIONS; j++)
-  	{
-  		if(j != 0) fprintf(fp, ", ");
-  		fprintf(fp, "%ld", (long int)((CPS)*(double)(GIG * time_stamp[j][i].tv_sec + time_stamp[j][i].tv_nsec)));
-  	}
+  fprintf(fp, "Length, Basic, Red-Black\n");
+  // printf("CPS == %g\n", CPS);
+  for(i = 0; i < ITERS; i++) {
+    ASIZE = BASE+(i+1)*DELTA;
+    fprintf(fp, "%d", ASIZE);
+    for(j = 0; j < OPTIONS; j++) {
+      long int elements;
+      double seconds;
+      elements = its[j][i] * ASIZE * ASIZE;
+      seconds =  ((double)(time_stamp[j][i].tv_sec))
+                       + ((double)(time_stamp[j][i].tv_nsec)) / 1.0e9;
+      // printf("ASIZE %d is %ld elements, took %g sec\n", ASIZE, elements, seconds);
+      fprintf(fp, ", %g", CPS * seconds / ((double) elements));
+    }
+    fprintf(fp, "\n");
   }
-  fprintf(fp, "\n");
   fclose(fp);
   return 0;
 }
@@ -306,11 +311,11 @@ vec_ptr new_vec(long int len)
   if (len > 0) {
     data_t *data = (data_t *) calloc(len*len, sizeof(data_t));
     if (!data) {
-	  free((void *) result);
-	  printf("\n COULDN'T ALLOCATE STORAGE \n");
-	  return NULL;  /* Couldn't allocate storage */
-	}
-	result->data = data;
+    free((void *) result);
+    printf("\n COULDN'T ALLOCATE STORAGE \n");
+    return NULL;  /* Couldn't allocate storage */
+  }
+  result->data = data;
   }
   else result->data = NULL;
 
@@ -388,8 +393,8 @@ double fRand(double fMin, double fMax)
 
 double omega_calc(int elements)
 {
-	double calc = (1.8169 + 0.09 * log(19.6578 * elements) ) / 1.5521;
-	return (calc >= 2.00) ? 1.99 : calc;
+  double calc = (1.8169 + 0.09 * log(19.6578 * elements) ) / 1.5521;
+  return (calc >= 2.00) ? 1.99 : calc;
 }
 
 void SOR_basic(vec_ptr v, int *iterations)
@@ -403,151 +408,155 @@ void SOR_basic(vec_ptr v, int *iterations)
   while ((mean_change/(double)(length*length)) > (double)TOL) {
     iters++;
     mean_change = 0;
-    for (i = 1; i < length-1; i++) 
+    for (i = 1; i < length-1; i++)  {
       for (j = 1; j < length-1; j++) {
-	change = data[i*length+j] - .25 * (data[(i-1)*length+j] +
-					  data[(i+1)*length+j] +
-					  data[i*length+j+1] +
-					  data[i*length+j-1]);
-	data[i*length+j] -= change * OMEGA;
-	if (change < 0){
-	  change = -change;
-	}
-	mean_change += change;
+        change = data[i*length+j] - .25 * (data[(i-1)*length+j] +
+            data[(i+1)*length+j] +
+            data[i*length+j+1] +
+            data[i*length+j-1]);
+        data[i*length+j] -= change * OMEGA;
+        if (change < 0) {
+          change = -change;
+        }
+        mean_change += change;
       }
+    }
     if (abs(data[(length-2)*(length-2)]) > 10.0*(MAXVAL - MINVAL)) {
       printf("\n PROBABLY DIVERGENCE iter = %d", iters);
       break;
     }
   }
-   *iterations = iters;
-  //printf("\n iters = %d", iters);
+  *iterations = iters;
+  // printf("\n iters = %d", iters);
 }
 
 /////////////////////  Parallel Work  ///////////////////////////
 
 void* SOR_rb_calc(void* t_arg)  // split the SOR on red-black
 {
-	prb_data thread_arg;
-	int      t_id;
-	long int len;
-	data_t   *data;
-	int 	 iters;
+  prb_data thread_arg;
+  int      t_id;
+  long int len;
+  data_t   *data;
+  int    iters;
 
-	thread_arg = (prb_data) t_arg;
-	t_id	   = thread_arg -> t_id;
-	len 	   = thread_arg -> len;
-	data 	   = thread_arg -> data;
-	iters      = thread_arg -> iters;
+  thread_arg = (prb_data) t_arg;
+  t_id     = thread_arg -> t_id;
+  len      = thread_arg -> len;
+  data      = thread_arg -> data;
+  iters      = thread_arg -> iters;
 
-	//  Begin bulk of SOR calculations
-	//  Barriers used to make sure things don't stomp too much
+  //  Begin bulk of SOR calculations
+  //  Barriers used to make sure things don't stomp too much
 
-	int i, j, row_offset, bc;
+  int i, j, row_offset, bc;
 
-	int    odd_change = len % 2;
-	int    j_start    = t_id + 1;
-	double len_sq     = (double)(len * len);
+  int    odd_change = len % 2;
+  int    j_start    = t_id + 1;
+  double len_sq     = (double)(len * len);
 
-	double local_change, change;
+  double local_change, change;
 
-	do
-	{
-		iters++;
+  do
+  {
+    iters++;
 
-		bc = pthread_barrier_wait(&rb_barr);
-		if(bc != 0 && bc != PTHREAD_BARRIER_SERIAL_THREAD)
-		{
-			printf("\n\nERROR: Could not wait on barrier\n\n");
-			exit(-1);
-		}
+    bc = pthread_barrier_wait(&rb_barr);
+    if(bc != 0 && bc != PTHREAD_BARRIER_SERIAL_THREAD)
+    {
+      printf("\n\nERROR: Could not wait on barrier\n\n");
+      exit(-1);
+    }
 
-		rb_change    = 0;
-		local_change = 0;
+    rb_change    = 0;
+    local_change = 0;
 
-		for(i = 1; i < len - 1; i++)
-		{
-			//  For non-even length we need a flop factor
-			if(odd_change == 0) j_start = (j_start == 1) ? 2 : 1;
-			row_offset = i * len;
+    for(i = 1; i < len - 1; i++)
+    {
+      //  For non-even length we need a flop factor
+      if(odd_change == 0) j_start = (j_start == 1) ? 2 : 1;
+      row_offset = i * len;
 
-			for(j = j_start; j < len - 1; j += 2)
-			{
-				change = data[row_offset+j] - .25 * (data[row_offset-len+j] +
-					  data[row_offset+len+j] +
-					  data[row_offset+j+1] +
-					  data[row_offset+j-1]);
+      for(j = j_start; j < len - 1; j += 2)
+      {
+        change = data[row_offset+j] - .25 * (data[row_offset-len+j] +
+            data[row_offset+len+j] +
+            data[row_offset+j+1] +
+            data[row_offset+j-1]);
 
-				data[row_offset+j] -= change * OMEGA;
-				change             = (change < 0) ? -change : change;
-				local_change       += change;
-			}
-		}
+        data[row_offset+j] -= change * OMEGA;
+        change             = (change < 0) ? -change : change;
+        local_change       += change;
+      }
+    }
 
-		bc = pthread_barrier_wait(&rb_barr);
-		if(bc != 0 && bc != PTHREAD_BARRIER_SERIAL_THREAD)
-		{
-			printf("\n\nERROR: Could not wait on barrier\n\n");
-			exit(-1);
-		}
+    bc = pthread_barrier_wait(&rb_barr);
+    if(bc != 0 && bc != PTHREAD_BARRIER_SERIAL_THREAD)
+    {
+      printf("\n\nERROR: Could not wait on barrier\n\n");
+      exit(-1);
+    }
 
-		rb_change += local_change;
+    rb_change += local_change;
 
-		bc = pthread_barrier_wait(&rb_barr);
-		if(bc != 0 && bc != PTHREAD_BARRIER_SERIAL_THREAD)
-		{
-			printf("\n\nERROR: Could not wait on barrier\n\n");
-			exit(-1);
-		}
+    bc = pthread_barrier_wait(&rb_barr);
+    if(bc != 0 && bc != PTHREAD_BARRIER_SERIAL_THREAD)
+    {
+      printf("\n\nERROR: Could not wait on barrier\n\n");
+      exit(-1);
+    }
 
-	}while((rb_change/len_sq) > (double) TOL);
+  } while(iters < its_for_rbt);
+  // }while((rb_change/len_sq) > (double) TOL);
 
-	pthread_exit(NULL);
+  thread_arg -> iters = iters;
+
+  pthread_exit(NULL);
 }
 
 void SOR_red_black(vec_ptr v, int *iterations)
 {
-	pthread_t threads[RB_THREADS];
-	rb_data	  rb_args[RB_THREADS];
-	int 	  pt_ret;
-	int 	  i, j;
+  pthread_t threads[RB_THREADS];
+  rb_data    rb_args[RB_THREADS];
+  int     pt_ret;
+  int     i, j;
 
-	long int len   = get_vec_length(v);
-	data_t	 *data = get_vec_start(v);
+  long int len   = get_vec_length(v);
+  data_t   *data = get_vec_start(v);
 
-	// set up barrier
-	if(pthread_barrier_init(&rb_barr, NULL, RB_THREADS))
-	{
-		printf("\n\n\tERROR: failed to create barrier!\n\n");
-		return;
-	}
+  // set up barrier
+  if(pthread_barrier_init(&rb_barr, NULL, RB_THREADS))
+  {
+    printf("\n\n\tERROR: failed to create barrier!\n\n");
+    return;
+  }
 
-	// set up and launch threads
-	for(i = 0; i < RB_THREADS; i++)
-	{
-		rb_args[i].t_id  = i;
-		rb_args[i].len   = len;
-		rb_args[i].data  = data;
-		rb_args[i].iters = 0;
+  // set up and launch threads
+  for(i = 0; i < RB_THREADS; i++)
+  {
+    rb_args[i].t_id  = i;
+    rb_args[i].len   = len;
+    rb_args[i].data  = data;
+    rb_args[i].iters = 0;
 
-		pt_ret = pthread_create(&threads[i], NULL, SOR_rb_calc, (void*) &rb_args[i]);
-		if(pt_ret)
-		{
-			printf("\n\n\tERROR: pthread_create() returns -- %d\n\n", pt_ret);
-			exit(-1);
-		}
-	}
+    pt_ret = pthread_create(&threads[i], NULL, SOR_rb_calc, (void*) &rb_args[i]);
+    if(pt_ret)
+    {
+      printf("\n\n\tERROR: pthread_create() returns -- %d\n\n", pt_ret);
+      exit(-1);
+    }
+  }
 
 
-	// join on threads to wait for them
-	for(j = 0; j < RB_THREADS; j++)
-	{
-		if(pthread_join(threads[j], NULL))
-		{
-			printf("\n\n\tERROR on join\n\n");
-			exit(19);
-		}
-	}
+  // join on threads to wait for them
+  for(j = 0; j < RB_THREADS; j++)
+  {
+    if(pthread_join(threads[j], NULL))
+    {
+      printf("\n\n\tERROR on join\n\n");
+      exit(19);
+    }
+  }
 
-	*iterations = (rb_args[0].iters + rb_args[1].iters) / 2;
+  *iterations = (rb_args[0].iters + rb_args[1].iters) / 2;
 }
